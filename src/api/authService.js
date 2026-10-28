@@ -30,9 +30,13 @@ export const logoutUser = () => {
   localStorage.removeItem('user');
 };
 
-
-export const getUsers = async () => {
-  return await axios.get(`${BaseURL}/users`);
+//this function is for adalat feeding it basically takes a ut number and serches the relevent data agaisnt the preisoner record which we will be using to feed the adalat details
+// 3. Adalat Feeding: Search prisoner records by parameters
+export const getUsers = async (searchParams) => {
+  // ✅ FIX: Compute queryParams inside the function body where searchParams is accessible
+  const queryParams = new URLSearchParams(searchParams).toString();
+  const response = await API.get(`${BaseURL}/api/prisoners/users?${queryParams}`);
+  return response.data;
 };
 
 export const updateUser = async (id, userData) => {

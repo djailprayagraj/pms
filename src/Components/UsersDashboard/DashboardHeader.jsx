@@ -1,21 +1,36 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  setMainAction,
+  setSubOption,
+  setSelectedDate,
+} from '../../redux/slices/adalatSlice';
 
 const DashboardHeader = () => {
-  // Column 1 main choice
-  const [mainAction, setMainAction] = useState('adalat'); // 'adalat' | 'rihaai' | 'sansodhan'
-  
-  // Column 2 dynamic choice based on Column 1
-  const [subOption, setSubOption] = useState('session'); 
+  const dispatch = useDispatch();
+  const dateInputRef = useRef(null);
 
-  // Column 3 persistent date
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // Extract values directly from Redux store
+  const {
+    mainAction,
+    subOption,
+    selectedDate,
+  } = useSelector((state) => state.adalat || {});
 
-  // Handler for changing main category to reset sub-options cleanly
+  // Handler for changing main category to reset sub-options cleanly in Redux
   const handleMainActionChange = (action) => {
-    setMainAction(action);
-    if (action === 'adalat') setSubOption('session');
-    else if (action === 'rihaai') setSubOption('bail');
-    else if (action === 'sansodhan') setSubOption('personal_info');
+    dispatch(setMainAction(action));
+  };
+
+  // Trigger calendar picker on icon or input container click
+  const handleCalendarClick = () => {
+    if (dateInputRef.current) {
+      if ('showPicker' in HTMLInputElement.prototype) {
+        dateInputRef.current.showPicker();
+      } else {
+        dateInputRef.current.focus();
+      }
+    }
   };
 
   // Get dynamic options for Column 2 based on Column 1
@@ -50,7 +65,9 @@ const DashboardHeader = () => {
         
         {/* ================= COLUMN 1: Main Action Radios ================= */}
         <div className="flex flex-col space-y-1">
-          <span className="text-[10px] uppercase font-mono text-slate-400 tracking-wider">1. Action Category</span>
+          <span className="text-[10px] uppercase font-mono text-slate-400 tracking-wider">
+            1. Action Category
+          </span>
           <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
             {[
               { id: 'adalat', label: 'Adalat' },
@@ -81,7 +98,7 @@ const DashboardHeader = () => {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setSubOption(item.id)}
+                onClick={() => dispatch(setSubOption(item.id))}
                 className={`flex-1 py-1.5 px-2 rounded-md text-[11px] font-mono tracking-wide transition cursor-pointer text-center truncate ${
                   subOption === item.id 
                     ? 'bg-red-600 text-white shadow-md font-bold' 
@@ -94,16 +111,45 @@ const DashboardHeader = () => {
           </div>
         </div>
 
-        {/* ================= COLUMN 3: Persistent Date Picker ================= */}
+        {/* ================= COLUMN 3: Date Picker with SINGLE Custom Icon ================= */}
         <div className="flex flex-col space-y-1">
           <span className="text-[10px] uppercase font-mono text-slate-400 tracking-wider">3. Execution Date</span>
-          <div className="relative">
+          <div 
+            onClick={handleCalendarClick}
+            className="relative flex items-center bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 focus-within:border-red-600 transition cursor-pointer"
+          >
             <input 
+              ref={dateInputRef}
               type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-red-600 cursor-pointer"
+              value={selectedDate || ''}
+              onChange={(e) => dispatch(setSelectedDate(e.target.value))}
+              className="w-full bg-transparent text-xs text-slate-200 font-mono focus:outline-none cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
             />
+            {/* Single Interactive Calendar Icon */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCalendarClick();
+              }}
+              className="text-slate-400 hover:text-red-400 transition ml-2 cursor-pointer focus:outline-none flex-shrink-0"
+              title="Click to change date"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-4 w-4" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor" 
+                strokeWidth={2}
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                />
+              </svg>
+            </button>
           </div>
         </div>
 

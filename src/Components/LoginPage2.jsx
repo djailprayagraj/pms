@@ -1,24 +1,33 @@
 import React, { useState } from 'react';
 import { loginUser } from '../api/authService'; // Adjust path based on your folder structure
+import Toast from './Popups/Toast'; // Adjust path according to your folder structure
 
 const LoginPage2 = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
   const [showPassword, setShowPassword] = useState(false);
-  
-  // UI states for feedback and loading
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: '' }); // 'success' or 'error'
 
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
+  // UI states for loading and dynamic toast notification
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({
+    show: false,
+    type: 'success', // 'success' | 'error' | 'warning' | 'info'
+    code: null,
+    title: '',
+    message: '',
+  });
+
+  // Helper method to trigger dynamic toasts
+  const showToast = (message, type = 'success', code = null, title = '') => {
+    setToast({ show: true, message, type, code, title });
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setToast({ show: false, message: '', type: '' });
+    // Reset existing toast
+    setToast({ show: false, type: 'success', code: null, title: '', message: '' });
 
     try {
       // Hit the login API with the required payload structure
@@ -26,19 +35,33 @@ const LoginPage2 = () => {
       const response = await loginUser(data);
 
       console.log('Login Success:', response);
-      
-      // Show custom success toast banner
-      showToast(`Welcome back, ${response.user.name}! Role: ${response.user.role}`, 'success');
-      
+
+      // Show dynamic success toast banner with code 200
+      showToast(
+        `Welcome back, ${response.user?.name || username}! Role: ${response.user?.role || role}`, 
+        'success', 
+        200, 
+        'Access Granted'
+      );
+
       // Wait 1.5 seconds so the user can see the toast before reloading/redirecting
       setTimeout(() => {
         window.location.reload();
       }, 1500);
-      
+
     } catch (err) {
-      // Extract error message safely from Axios response if available
+      // Dynamically extract HTTP status code (e.g., 401, 403, 500) or error string code
+      const errorCode = err.response?.status || err.code || 'ERR_CONN';
       const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
-      showToast(errorMessage, 'error');
+      
+      // Determine appropriate error title based on the error code
+      let errorTitle = 'Authentication Error';
+      if (errorCode === 401) errorTitle = 'Invalid Credentials';
+      if (errorCode === 403) errorTitle = 'Access Denied';
+      if (errorCode === 500) errorTitle = 'Server Fault';
+
+      // Trigger dynamic error toast with code and title
+      showToast(errorMessage, 'error', errorCode, errorTitle);
       setLoading(false);
     }
   };
@@ -48,20 +71,17 @@ const LoginPage2 = () => {
       {/* Background Subtle Glow Effect */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black -z-10"></div>
 
-      {/* Floating Toast Notification Bar */}
-      {toast.show && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 animate-bounce-once ${
-          toast.type === 'success' 
-            ? 'bg-emerald-950/90 border-emerald-600 text-emerald-200' 
-            : 'bg-red-950/90 border-red-600 text-red-200'
-        }`}>
-          <div className={`w-3 h-3 rounded-full ${toast.type === 'success' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500 animate-pulse'}`} />
-          <span className="text-xs font-mono font-medium">{toast.message}</span>
-        </div>
-      )}
+      {/* Dynamic Toast Notification Component */}
+      <Toast 
+        show={toast.show} 
+        type={toast.type} 
+        code={toast.code} 
+        title={toast.title} 
+        message={toast.message} 
+      />
 
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-        
+
         {/* Header / Branding */}
         <div className="bg-slate-900 border-b border-slate-800 p-6 text-center">
           <div className="h-12 w-12 mx-auto rounded-lg bg-red-600 flex items-center justify-center font-bold text-white text-lg shadow-lg mb-3">
@@ -73,7 +93,7 @@ const LoginPage2 = () => {
 
         {/* Form Body */}
         <form onSubmit={handleLogin} className="p-6 space-y-4">
-          
+
           {/* Role Dropdown */}
           <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
