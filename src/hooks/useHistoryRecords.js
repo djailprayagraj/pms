@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchAdalatByDate, deleteAdalatEntry } from '.././api/adalatService';
+import { useSelector, useDispatch } from 'react-redux';
+import { setSelectedDate } from '../redux/slices/adalatSlice'; // Adjust import path to your slice
+import { fetchAdalatByDate, deleteAdalatEntry } from '../api/adalatService';
 
-export const useHistoryRecords = (isOpen) => {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+export const useHistoryRecords = () => {
+  const dispatch = useDispatch();
+  const selectedDate = useSelector((state) => state.adalat?.selectedDate || new Date().toISOString().split('T')[0]);
+
   const [dbRecords, setDbRecords] = useState([]);
   const [filterMode, setFilterMode] = useState('all'); // 'all', 'session', 'vc'
   const [genderFilter, setGenderFilter] = useState('all'); // 'all', 'male', 'female'
@@ -11,6 +15,10 @@ export const useHistoryRecords = (isOpen) => {
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, record: null });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleSetSelectedDate = (date) => {
+    dispatch(setSelectedDate(date));
+  };
 
   const fetchDbRecords = useCallback(async () => {
     try {
@@ -49,10 +57,46 @@ export const useHistoryRecords = (isOpen) => {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchDbRecords();
-    }
-  }, [isOpen, selectedDate, fetchDbRecords]);
+    fetchDbRecords();
+  }, [selectedDate, fetchDbRecords]);
+
+  // --- Dynamic Badge Counts Calculation ---
+  const counts = useMemo(() => {
+    const isMale = (g) => g === 'M' || g === 'MALE';
+    const isFemale = (g) => g === 'F' || g === 'FEMALE';
+    const isSession = (s) => s !== 'vc';
+    const isVc = (s) => s === 'vc';
+
+    // Type counts (Total Unique Inmates per mode)
+    const getUniqueCount = (records) => {
+      const map = new Map();
+      records.forEach(r => {
+        const key = r.ut_code && r.ut_code !== 'N/A' ? r.ut_code : r.full_name;
+        map.set(key, true);
+      });
+      return map.size;
+    };
+
+    const sessionRecords = dbRecords.filter(r => isSession(r.sub_option));
+    const vcRecords = dbRecords.filter(r => isVc(r.sub_option));
+
+    // Base records for gender filtering based on currently selected Type filterMode
+    const activeTypeRecords = 
+      filterMode === 'session' ? sessionRecords :
+      filterMode === 'vc' ? vcRecords : dbRecords;
+
+    const maleRecords = activeTypeRecords.filter(r => isMale(r.gender));
+    const femaleRecords = activeTypeRecords.filter(r => isFemale(r.gender));
+
+    return {
+      all: getUniqueCount(dbRecords),
+      session: getUniqueCount(sessionRecords),
+      vc: getUniqueCount(vcRecords),
+      genderAll: getUniqueCount(activeTypeRecords),
+      genderMale: getUniqueCount(maleRecords),
+      genderFemale: getUniqueCount(femaleRecords),
+    };
+  }, [dbRecords, filterMode]);
 
   const filteredRecords = useMemo(() => {
     return dbRecords.filter((r) => {
@@ -126,7 +170,7 @@ export const useHistoryRecords = (isOpen) => {
 
   return {
     selectedDate,
-    setSelectedDate,
+    setSelectedDate: handleSetSelectedDate,
     dbRecords,
     filterMode,
     setFilterMode,
@@ -141,5 +185,6 @@ export const useHistoryRecords = (isOpen) => {
     fetchDbRecords,
     groupedPrisonerRecords,
     handleConfirmDelete,
+    counts, 
   };
 };

@@ -5,7 +5,7 @@ const HistorySectionFilters = ({
   setFilterMode,
   genderFilter,
   setGenderFilter,
-  totalRecordsCount,
+  counts,
 }) => {
   return (
     <div className="px-4 py-2.5 bg-slate-950/50 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
@@ -17,7 +17,7 @@ const HistorySectionFilters = ({
             filterMode === 'all' ? 'bg-slate-800 text-white font-bold border-slate-700' : 'text-slate-400 border-slate-800'
           }`}
         >
-          All ({totalRecordsCount})
+          All ({counts.all})
         </button>
         <button
           onClick={() => setFilterMode('session')}
@@ -25,7 +25,7 @@ const HistorySectionFilters = ({
             filterMode === 'session' ? 'bg-amber-950/80 text-amber-300 font-bold border-amber-800' : 'text-slate-400 border-slate-800'
           }`}
         >
-          Session Adalat
+          Session Adalat ({counts.session})
         </button>
         <button
           onClick={() => setFilterMode('vc')}
@@ -33,7 +33,7 @@ const HistorySectionFilters = ({
             filterMode === 'vc' ? 'bg-indigo-950/80 text-indigo-300 font-bold border-indigo-800' : 'text-slate-400 border-slate-800'
           }`}
         >
-          VC
+          VC ({counts.vc})
         </button>
       </div>
 
@@ -45,7 +45,7 @@ const HistorySectionFilters = ({
             genderFilter === 'all' ? 'bg-slate-800 text-white font-bold border-slate-700' : 'text-slate-400 border-slate-800'
           }`}
         >
-          All
+          All ({counts.genderAll})
         </button>
         <button
           onClick={() => setGenderFilter('male')}
@@ -53,7 +53,7 @@ const HistorySectionFilters = ({
             genderFilter === 'male' ? 'bg-blue-950/80 text-blue-300 font-bold border-blue-800' : 'text-slate-400 border-slate-800'
           }`}
         >
-          👨 Male
+          👨 Male ({counts.genderMale})
         </button>
         <button
           onClick={() => setGenderFilter('female')}
@@ -61,7 +61,7 @@ const HistorySectionFilters = ({
             genderFilter === 'female' ? 'bg-pink-950/80 text-pink-300 font-bold border-pink-800' : 'text-slate-400 border-slate-800'
           }`}
         >
-          👩 Female
+          👩 Female ({counts.genderFemale})
         </button>
       </div>
     </div>

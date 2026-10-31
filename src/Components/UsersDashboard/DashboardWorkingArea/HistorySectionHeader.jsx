@@ -17,7 +17,7 @@ const HistorySectionHeader = ({
           <div className="flex items-center gap-2">
             <span className="text-emerald-400">📜</span>
             <h3 className="text-sm font-bold text-white tracking-wide">
-              Database Synced Records {isLoadingDb && '(Loading...)'}
+              History Log {isLoadingDb && '(Loading...)'}
             </h3>
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">Grouped by inmate with consolidated case logs</p>

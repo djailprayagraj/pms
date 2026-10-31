@@ -36,6 +36,7 @@ const HistorySection = ({ isOpen: externalIsOpen, onClose: externalOnClose }) =>
     fetchDbRecords,
     groupedPrisonerRecords,
     handleConfirmDelete,
+    counts,
   } = useHistoryRecords(isOpen);
 
   const [isTranslating, setIsTranslating] = useState(false);
@@ -94,7 +95,7 @@ const HistorySection = ({ isOpen: externalIsOpen, onClose: externalOnClose }) =>
           className="fixed z-50 flex items-center gap-2 bg-slate-900/95 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 px-3 py-2 rounded-xl shadow-2xl backdrop-blur-md cursor-grab active:cursor-grabbing group select-none"
         >
           <span className="text-xs font-mono font-medium text-slate-300 group-hover:text-white pointer-events-none">
-            Database Log ({groupedPrisonerRecords.length})
+            History Log ({groupedPrisonerRecords.length})
           </span>
         </button>
       )}
@@ -126,6 +127,7 @@ const HistorySection = ({ isOpen: externalIsOpen, onClose: externalOnClose }) =>
           genderFilter={genderFilter}
           setGenderFilter={setGenderFilter}
           totalRecordsCount={dbRecords.length}
+          counts={counts}
         />
 
         <HistorySectionTable
