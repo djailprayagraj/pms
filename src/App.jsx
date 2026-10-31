@@ -1,7 +1,7 @@
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { PublicRoute, ProtectedRoute } from './Components/routes/ProtectedRoute';
 import LoginPage2 from './Components/LoginPage2';
 import AdminDashboard from './Components/admin/AdminDashboard';
-import { PublicRoute, ProtectedRoute } from './Components/routes/ProtectedRoute';
 import Dashboard from './Components/UsersDashboard/Dashboard';
 import './App.css';
 import AddUserPage from './Components/admin/AddUserPage';
@@ -34,7 +34,7 @@ function App() {
       {/* 1. Public Routes (Redirects to dashboard if already logged in) */}
       <Route element={<PublicRoute />}>
         <Route 
-        path="/login"                                                          //   /login
+          path="/login"                                                          //   /login
           element={<LoginPage2 onLoginSuccess={handleLoginSuccess} />} 
         />
         {/* Default route redirecting to login */}
@@ -58,6 +58,7 @@ function App() {
           element={<AddUserPage />} 
         />
       </Route>
+      
 
       {/* 3. Standard User / Staff Protected Route */}
       <Route element={<ProtectedRoute allowedRole="staff" /> /* or omit allowedRole if any logged-in user can access */}>

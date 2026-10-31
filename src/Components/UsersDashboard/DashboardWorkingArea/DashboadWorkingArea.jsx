@@ -30,11 +30,16 @@ const DashboardWorkingArea = () => {
     courtName,
     adalatType,
     peshiRemarks,
+    loading, // Destructured loading state to guard against concurrent API calls
   } = useSelector((state) => state.adalat);
 
   // --- Handle Real API Search Submission ---
   const handleSearch = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
+
+    // 🛡️ REQUEST GUARD: Prevent duplicate concurrent requests if a request is already in flight
+    if (loading) return;
+
     dispatch(clearSearchAlerts());
 
     let apiParams = {};
@@ -93,7 +98,7 @@ const DashboardWorkingArea = () => {
 
   // --- Handle Adalat Peshi Feeding Form Submission ---
   const handleAdalatSubmit = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!prisonerResult) return;
 
     if (!peshiDate) {
@@ -133,7 +138,6 @@ const DashboardWorkingArea = () => {
 
   return (
     <div className="space-y-6">
-     
       <HistorySection />
       <SearchSection handleSearch={handleSearch} handleAdalatSubmit={handleAdalatSubmit} />
       <StatsSection />

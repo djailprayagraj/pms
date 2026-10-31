@@ -7,9 +7,11 @@ export const postAdalatEntries = async (entries) => {
   return response.data;
 };
 
-// 2. Update a single Adalat entry by ID (Warrant, Court, Status, etc.)
-export const updateAdalatEntry = async (id, updateData) => {
-  const response = await API.put(`${BaseURL}/api/adalat/${id}`, updateData);
+
+// 2. Update a single Adalat entry by UT Number (Warrant, Court, Status, etc.)
+export const updateAdalatEntryByUt = async (utNumber, updateData) => {
+  const encodedUt = encodeURIComponent(utNumber);
+  const response = await API.put(`${BaseURL}/api/adalat/ut/${encodedUt}`, updateData);
   return response.data;
 };
 

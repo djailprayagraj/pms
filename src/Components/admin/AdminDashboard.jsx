@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import AddUserPage from './AddUserPage';
 import EmployedUsers from './EmployedUsers';
 import AdminSubDashboard from './AdminSubDashboard';
-import AdminSubDashboardGroup from './AdminSubDashboardGroup';
-import AdminSidebar from './AdminSidebar';
-import AdminDashboardNavbar from './AdminDashboardNavbar';
+import AdminDashboardNavbar from './AdminDashboardNavbar';          // admin Navbar
+import AdminSidebar from './AdminSidebar';                          // admin sidebar 
+import AdminSubDashboardGroup from './AdminSubDashboardGroup';      // admin sub-dashboard
 
 export default function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
