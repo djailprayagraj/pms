@@ -33,8 +33,9 @@ const HistorySectionTable = ({
                   <td className="p-3 text-center font-bold text-slate-400">{index + 1}</td>
                   <td className="p-3 text-red-400 font-bold whitespace-nowrap">{inmateGroup.ut_code}</td>
                   <td className="p-3 text-white font-sans">
-                    <div className="font-bold text-sm text-slate-100">{inmateGroup.full_name}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">S/o: {inmateGroup.father_name}</div>
+                    {/* Added break-words whitespace-normal to prevent truncation with ... */}
+                    <div className="font-bold text-sm text-slate-100 break-words whitespace-normal">{inmateGroup.full_name}</div>
+                    <div className="text-xs text-slate-400 mt-0.5 break-words whitespace-normal">S/o: {inmateGroup.father_name}</div>
                     <div className="text-[10px] text-indigo-400 mt-1 font-mono">Barrack: {inmateGroup.barrack}</div>
                   </td>
                   <td className="p-3 space-y-2">

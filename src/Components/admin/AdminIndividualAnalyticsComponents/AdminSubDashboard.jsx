@@ -1,100 +1,166 @@
-import React, { useState } from 'react';
-import CasesPeshiDetails from './CasesPeshiDetails';
-
-// Mock database to demonstrate full functionality. 
-const MOCK_PRISONER_DATA = {
-  'UT-90142': {
-    utNumber: 'UT-90142',
-    name: 'Om Prakash',
-    fatherName: 'Bhagwat Prashad',
-    age: 34,
-    gender: 'Male',
-    admissionDate: '12 Jan 2024',
-    wardNo: 'Ward 4B (High Security)',
-    custodyStatus: 'Under Trial',
-    policeStation: 'Civil Lines, Prayagraj',
-    primaryFir: 'FIR-402/2024',
-
-    // Summary Counts
-    stats: {
-      totalProductions: 14,
-      vcCount: 10,
-      inPersonCount: 4,
-      totalCases: 3,
-      activeCases: 2,
-      releasedBailedCases: 1,
-      medicalVisits: 3,
-      mulaqatVisits: 8
-    },
-
-    // Case Details
-    cases: [
-      {
-        caseNo: 'ST/402/2024',
-        firNo: 'FIR-402/2024',
-        courtName: 'District & Sessions Court, Prayagraj',
-        sections: 'IPC 307, 323, 504',
-        warrantType: 'Sec 309 CrPC / 346 BNSS (Trial)',
-        rihaiDate: 'Pending (Under Trial)',
-        status: 'Under Trial',
-        statusBg: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-      },
-      {
-        caseNo: 'ST/118/2023',
-        firNo: 'FIR-118/2023',
-        courtName: 'Additional Chief Judicial Magistrate, Court No. 3',
-        sections: 'IPC 384, 506',
-        warrantType: 'Sec 209 CrPC / 239 BNSS (Committal)',
-        rihaiDate: '15 Sep 2024 (Bail Granted)',
-        status: 'Bail Granted',
-        statusBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-      },
-      {
-        caseNo: 'ST/889/2022',
-        firNo: 'FIR-889/2022',
-        courtName: 'Special Judge SC/ST Act Court',
-        sections: 'IPC 147, 148, 149',
-        warrantType: 'Sec 309 CrPC / 346 BNSS (Trial)',
-        rihaiDate: 'Pending (Under Trial)',
-        status: 'Under Trial',
-        statusBg: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-      }
-    ],
-
-    // Court Production History
-    productions: [
-      { id: 1, date: '18 Oct 2024', type: 'Virtual (VC)', court: 'District Court, Prayagraj', judge: 'Hon. A.K. Sharma', purpose: 'Charge Framing', status: 'Completed' },
-      { id: 2, date: '04 Oct 2024', type: 'Virtual (VC)', court: 'District Court, Prayagraj', judge: 'Hon. A.K. Sharma', purpose: 'Evidence Recording', status: 'Completed' },
-      { id: 3, date: '15 Sep 2024', type: 'In-Person', court: 'High Court Bench Allahabad', judge: 'Hon. S.K. Verma', purpose: 'Bail Hearing', status: 'Completed' },
-      { id: 4, date: '28 Aug 2024', type: 'Virtual (VC)', court: 'ACJM Court 3', judge: 'Hon. R.P. Mishra', purpose: 'Remand Extension', status: 'Completed' },
-      { id: 5, date: '10 Aug 2024', type: 'In-Person', court: 'District Court, Prayagraj', judge: 'Hon. A.K. Sharma', purpose: 'Witness Cross-Exam', status: 'Completed' },
-      { id: 6, date: '22 Jul 2024', type: 'Virtual (VC)', court: 'District Court, Prayagraj', judge: 'Hon. A.K. Sharma', purpose: 'Hearing', status: 'Completed' },
-      { id: 7, date: '05 Jul 2024', type: 'In-Person', court: 'Special SC/ST Court', judge: 'Hon. M.L. Gupta', purpose: 'Argument', status: 'Completed' }
-    ]
-  }
-};
+import React, { useState, useEffect } from 'react';
+import CasesPeshiDetails from '../CasesPeshiDetails';
+import { getUsers } from '../../../api/authService'; // Updated API import
 
 export default function AdminSubDashboard() {
-  const [searchInput, setSearchInput] = useState('UT-90142');
-  const [selectedUt, setSelectedUt] = useState('UT-90142');
+  const [prisonersList, setPrisonersList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState('');
+  const [selectedPrisoner, setSelectedPrisoner] = useState(null);
   const [activeTab, setActiveTab] = useState('productions'); // 'productions' | 'cases' | 'analytics'
   const [errorMessage, setErrorMessage] = useState('');
   
   // Modal visibility state for Cases Peshi Details
   const [showCasesModal, setShowCasesModal] = useState(false);
 
-  const prisoner = MOCK_PRISONER_DATA[selectedUt];
+  // Fetch prisoners using the getUsers API on component mount
+  useEffect(() => {
+    const loadPrisoners = async () => {
+      try {
+        setLoading(true);
+        // Fetching initial default records
+        const response = await getUsers({ limit: 50 });
+        console.log('Fetched Users Response:', response);
 
-  const handleSearch = (e) => {
+        const records = Array.isArray(response) 
+          ? response 
+          : response?.prisoners || response?.data || [];
+
+        if (records.length > 0) {
+          setPrisonersList(records);
+          setSelectedPrisoner(records[0]);
+          setSearchInput(records[0].RegisterNo || records[0].utNumber || '');
+        }
+      } catch (error) {
+        console.error('Failed to fetch prisoners:', error);
+        setErrorMessage('Failed to connect to server and fetch prisoner records.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPrisoners();
+  }, []);
+
+  const handleSearch = async (e) => {
     e.preventDefault();
-    const query = searchInput.trim().toUpperCase();
-    if (MOCK_PRISONER_DATA[query]) {
-      setSelectedUt(query);
+    const query = searchInput.trim();
+    
+    if (!query) {
+      setErrorMessage('Please enter a valid Register/UT Number.');
+      return;
+    }
+
+    try {
+      setLoading(true);
       setErrorMessage('');
-    } else {
-      setErrorMessage(`No record found for UT Number "${query}". Try searching "UT-90142"`);
+
+      // Pass utNumber explicitly. 
+      // Note: Ensure your authService getUsers helper appends a cache-buster or 
+      // your backend disables caching to prevent 304 Not Modified cache locks.
+      const response = await getUsers({ utNumber: query });
+      const records = Array.isArray(response) 
+        ? response 
+        : response?.prisoners || response?.data || [];
+
+      if (records.length > 0) {
+        setPrisonersList(records);
+        setSelectedPrisoner(records[0]);
+      } else {
+        // Fallback to local filtering if backend didn't return a direct match
+        const found = prisonersList.find(
+          (p) => 
+            (p.RegisterNo && p.RegisterNo.toUpperCase() === query.toUpperCase()) ||
+            (p.utNumber && p.utNumber.toUpperCase() === query.toUpperCase()) ||
+            (p.JID && p.JID.toUpperCase() === query.toUpperCase()) ||
+            (p.PrisonerName && p.PrisonerName.toUpperCase().includes(query.toUpperCase()))
+        );
+
+        if (found) {
+          setSelectedPrisoner(found);
+        } else {
+          setErrorMessage(`No record found matching "${query}".`);
+        }
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setErrorMessage('Error executing search query.');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleQuickSelect = (prisoner) => {
+    setSelectedPrisoner(prisoner);
+    setSearchInput(prisoner.RegisterNo || prisoner.utNumber || '');
+    setErrorMessage('');
+  };
+
+  if (loading && prisonersList.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-slate-400 font-mono text-xs">
+        Loading prisoner intelligence & analytics...
+      </div>
+    );
+  }
+
+  // Helper mappings for live API prisoner attributes
+  const name = selectedPrisoner?.PrisonerName || selectedPrisoner?.name || 'Unknown Prisoner';
+  const avatarInitials = name !== 'Unknown Prisoner' 
+    ? name.split(' ').map(n => n?.[0] || '').join('').toUpperCase() 
+    : 'TP';
+
+  const fatherName = selectedPrisoner?.FatherName || selectedPrisoner?.fatherName || 'N/A';
+  const registerNo = selectedPrisoner?.RegisterNo || selectedPrisoner?.utNumber || 'N/A';
+  const wardNo = selectedPrisoner?.Ward || selectedPrisoner?.Barrack || 'Unassigned';
+  const policeStation = `${selectedPrisoner?.PSName || selectedPrisoner?.policeStation || 'N/A'}, ${selectedPrisoner?.PSDistrict || ''}`;
+  const primaryFir = selectedPrisoner?.['FIR/Case No'] || selectedPrisoner?.primaryFir || 'N/A';
+  const admissionDate = selectedPrisoner?.FirstAdmissionDate || selectedPrisoner?.admissionDate || 'N/A';
+  const custodyStatus = (selectedPrisoner?.PrisonerType === 'UT' || selectedPrisoner?.custodyStatus === 'Under Trial') ? 'Under Trial' : 'Convict';
+  const age = selectedPrisoner?.Age || selectedPrisoner?.age || 'N/A';
+  const gender = selectedPrisoner?.Gender === 'M' || selectedPrisoner?.gender === 'Male' ? 'Male' : 'Female';
+
+  // Extract cases array safely
+  const casesData = Array.isArray(selectedPrisoner?.allCases) && selectedPrisoner.allCases.length > 0 
+    ? selectedPrisoner.allCases.map(c => ({
+        caseNo: c.caseNo || selectedPrisoner['FIR/Case No'] || 'N/A',
+        firNo: c.firNo || selectedPrisoner['14-Digit FIR No'] || 'N/A',
+        courtName: c.courtName || selectedPrisoner['Court Name'] || 'District Court',
+        sections: c.sections || selectedPrisoner['Act Section'] || 'N/A',
+        warrantType: c.warrantType || (selectedPrisoner.JudgeName ? `Judge: ${selectedPrisoner.JudgeName}` : 'Standard Warrant'),
+        rihaiDate: c.rihaiDate || selectedPrisoner.ReleaseDate || 'Pending',
+        status: c.status || (selectedPrisoner.Status === 'True' ? 'Under Trial' : 'Disposed'),
+        statusBg: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+      }))
+    : [
+        {
+          caseNo: selectedPrisoner?.['FIR/Case No'] || 'N/A',
+          firNo: selectedPrisoner?.['14-Digit FIR No'] || 'N/A',
+          courtName: selectedPrisoner?.['Court Name'] || 'District Court',
+          sections: selectedPrisoner?.['Act Section'] || 'N/A',
+          warrantType: selectedPrisoner?.JudgeName ? `Judge: ${selectedPrisoner.JudgeName}` : 'Standard Warrant',
+          rihaiDate: selectedPrisoner?.ReleaseDate || 'Pending',
+          status: 'Under Trial',
+          statusBg: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+        }
+      ];
+
+  // Production logs mapped dynamically
+  const productionsData = selectedPrisoner?.productions || [
+    { 
+      id: 1, 
+      date: selectedPrisoner?.NextDate || 'N/A', 
+      type: 'Virtual (VC)', 
+      court: selectedPrisoner?.['Court Name'] || 'District Court', 
+      judge: selectedPrisoner?.JudgeName || 'Hon. Judge', 
+      purpose: 'Hearing / Production', 
+      status: 'Scheduled' 
+    }
+  ];
+
+  const totalProductions = productionsData.length;
+  const vcCount = productionsData.filter(p => p.type.includes('VC')).length || 1;
+  const inPersonCount = totalProductions - vcCount;
 
   return (
     <div className="space-y-6 text-slate-100 font-sans">
@@ -106,7 +172,7 @@ export default function AdminSubDashboard() {
               <span>🔍</span> Prisoner Intelligence & Production Analytics
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Enter Undertrial (UT) Number to inspect court appearances, VC stats, and legal cases.
+              Search by UT/Register Number (e.g. 752/26) or select from recent database entries.
             </p>
           </div>
 
@@ -117,28 +183,32 @@ export default function AdminSubDashboard() {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Enter UT Number (e.g. UT-90142)"
+                placeholder="Enter UT Number (e.g. 752/26)"
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition font-mono uppercase"
               />
             </div>
             <button
               type="submit"
-              className="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-lg shadow-red-600/20 cursor-pointer"
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-lg shadow-red-600/20 cursor-pointer disabled:opacity-50"
             >
-              Search
+              {loading ? 'Searching...' : 'Search'}
             </button>
           </form>
         </div>
 
-        {/* Quick Suggestions / Recent Chips */}
-        <div className="flex items-center gap-2 mt-3 text-xs">
-          <span className="text-slate-500 font-mono text-[11px]">Quick Load:</span>
-          <button
-            onClick={() => { setSearchInput('UT-90142'); setSelectedUt('UT-90142'); setErrorMessage(''); }}
-            className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-mono text-[11px] px-2.5 py-1 rounded-md border border-slate-700 transition"
-          >
-            UT-90142 (Om Prakash)
-          </button>
+        {/* Quick Suggestions / Recent Chips from API list */}
+        <div className="flex items-center gap-2 mt-3 text-xs overflow-x-auto pb-1">
+          <span className="text-slate-500 font-mono text-[11px] whitespace-nowrap">Recent UT Numbers:</span>
+          {prisonersList.slice(0, 5).map((p, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleQuickSelect(p)}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-mono text-[11px] px-2.5 py-1 rounded-md border border-slate-700 transition whitespace-nowrap cursor-pointer"
+            >
+              {p.RegisterNo || p.utNumber} ({p.PrisonerName ? p.PrisonerName.split(' ')[0] : 'N/A'})
+            </button>
+          ))}
         </div>
 
         {errorMessage && (
@@ -148,7 +218,7 @@ export default function AdminSubDashboard() {
         )}
       </div>
 
-      {prisoner ? (
+      {selectedPrisoner ? (
         <>
           {/* Prisoner Overview Header Card */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-lg">
@@ -156,24 +226,24 @@ export default function AdminSubDashboard() {
               
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-red-600/50 flex items-center justify-center text-xl font-bold text-slate-200 shadow-inner">
-                  {prisoner.name.split(' ').map(n => n[0]).join('')}
+                  {avatarInitials}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-white capitalize">{prisoner.name}</h3>
+                    <h3 className="text-xl font-bold text-white capitalize">{name}</h3>
                     <span className="bg-red-500/10 text-red-400 text-[10px] font-mono px-2.5 py-0.5 rounded-full border border-red-500/30 uppercase font-semibold">
-                      {prisoner.custodyStatus}
+                      {custodyStatus}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
-                    S/O: <span className="text-slate-200 font-medium capitalize">{prisoner.fatherName}</span>
+                    Father's Name: <span className="text-slate-200 font-medium capitalize">{fatherName}</span>
                   </p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mt-2 font-mono">
-                    <span>UT ID: <strong className="text-red-400">{prisoner.utNumber}</strong></span>
+                    <span>UT No: <strong className="text-red-400">{registerNo}</strong></span>
                     <span>•</span>
-                    <span>Primary FIR: <strong className="text-slate-200">{prisoner.primaryFir}</strong></span>
+                    <span>Primary FIR: <strong className="text-slate-200">{primaryFir}</strong></span>
                     <span>•</span>
-                    <span>Admitted: <strong className="text-slate-200">{prisoner.admissionDate}</strong></span>
+                    <span>JID: <strong className="text-slate-200">{selectedPrisoner.JID || 'N/A'}</strong></span>
                   </div>
                 </div>
               </div>
@@ -181,16 +251,16 @@ export default function AdminSubDashboard() {
               {/* Detention Ward / Location Details */}
               <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl text-xs space-y-1.5 min-w-[240px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Assigned Cell/Ward:</span>
-                  <span className="text-slate-200 font-medium">{prisoner.wardNo}</span>
+                  <span className="text-slate-500">Assigned Ward/Barrack:</span>
+                  <span className="text-slate-200 font-medium">{wardNo}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Police Jurisdiction:</span>
-                  <span className="text-slate-200 font-medium">{prisoner.policeStation}</span>
+                  <span className="text-slate-200 font-medium">{policeStation}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Age / Gender:</span>
-                  <span className="text-slate-200 font-medium">{prisoner.age} Yrs / {prisoner.gender}</span>
+                  <span className="text-slate-200 font-medium">{age} Yrs / {gender}</span>
                 </div>
               </div>
 
@@ -208,7 +278,7 @@ export default function AdminSubDashboard() {
                 <span className="text-blue-400">⚖️</span>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-white">{prisoner.stats.totalProductions}</span>
+                <span className="text-3xl font-extrabold text-white">{totalProductions}</span>
                 <span className="text-[11px] text-slate-400">Court Hearings</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-2">Cumulative production record</p>
@@ -222,21 +292,20 @@ export default function AdminSubDashboard() {
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <div>
-                  <div className="text-xl font-bold text-emerald-400">{prisoner.stats.vcCount} <span className="text-xs font-normal text-slate-400">VC</span></div>
+                  <div className="text-xl font-bold text-emerald-400">{vcCount} <span className="text-xs font-normal text-slate-400">VC</span></div>
                 </div>
                 <div className="h-8 w-px bg-slate-800"></div>
                 <div>
-                  <div className="text-xl font-bold text-amber-400">{prisoner.stats.inPersonCount} <span className="text-xs font-normal text-slate-400">Physical</span></div>
+                  <div className="text-xl font-bold text-amber-400">{inPersonCount} <span className="text-xs font-normal text-slate-400">Physical</span></div>
                 </div>
               </div>
-              {/* Ratio Progress Bar */}
               <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden flex">
-                <div style={{ width: `${(prisoner.stats.vcCount / prisoner.stats.totalProductions) * 100}%` }} className="bg-emerald-500 h-full"></div>
-                <div style={{ width: `${(prisoner.stats.inPersonCount / prisoner.stats.totalProductions) * 100}%` }} className="bg-amber-500 h-full"></div>
+                <div style={{ width: `${(vcCount / totalProductions) * 100}%` }} className="bg-emerald-500 h-full"></div>
+                <div style={{ width: `${(inPersonCount / totalProductions) * 100}%` }} className="bg-amber-500 h-full"></div>
               </div>
             </div>
 
-            {/* Stat 3: Active/Total Cases (CLICKABLE to open CasesPeshiDetails modal) */}
+            {/* Stat 3: Active/Total Cases */}
             <div
               onClick={() => setShowCasesModal(true)}
               className="bg-slate-900/80 border border-red-500/40 hover:border-red-500 rounded-xl p-4 flex flex-col justify-between shadow-sm relative overflow-hidden group cursor-pointer transition transform hover:-translate-y-0.5"
@@ -247,31 +316,25 @@ export default function AdminSubDashboard() {
                 <span className="text-red-400">📑</span>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-white">{prisoner.stats.activeCases}</span>
-                <span className="text-xs text-slate-400">/ {prisoner.stats.totalCases} Total</span>
+                <span className="text-3xl font-extrabold text-white">{selectedPrisoner.totalCasesCount || casesData.length}</span>
+                <span className="text-xs text-slate-400">Total Cases</span>
               </div>
               <p className="text-[10px] text-emerald-400 mt-2 font-mono flex items-center gap-1">
                 <span>🔍 Click to inspect case details</span>
               </p>
             </div>
 
-            {/* Stat 4: Medical & Visitors */}
+            {/* Stat 4: Next Court Date */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-400">
-                <span>Visitors & Medical</span>
-                <span className="text-purple-400">👥</span>
+                <span>Next Court Date</span>
+                <span className="text-purple-400">📅</span>
               </div>
-              <div className="mt-3 flex justify-between items-center text-xs">
-                <div>
-                  <span className="block text-slate-400">Mulaqat</span>
-                  <span className="text-lg font-bold text-white">{prisoner.stats.mulaqatVisits}</span>
-                </div>
-                <div>
-                  <span className="block text-slate-400">Medical OPD</span>
-                  <span className="text-lg font-bold text-white">{prisoner.stats.medicalVisits}</span>
-                </div>
+              <div className="mt-3 text-xs">
+                <span className="block text-slate-400 font-mono">Scheduled Date:</span>
+                <span className="text-lg font-bold text-white font-mono">{selectedPrisoner.NextDate || 'N/A'}</span>
               </div>
-              <p className="text-[10px] text-slate-500 mt-2">Internal jail log history</p>
+              <p className="text-[10px] text-slate-500 mt-2">Presiding: {selectedPrisoner.JudgeName || 'N/A'}</p>
             </div>
 
           </div>
@@ -286,7 +349,7 @@ export default function AdminSubDashboard() {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Court Production Log ({prisoner.productions.length})
+              Court Production Log ({productionsData.length})
             </button>
             <button
               onClick={() => setActiveTab('cases')}
@@ -296,7 +359,7 @@ export default function AdminSubDashboard() {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Registered Cases ({prisoner.cases.length})
+              Registered Cases ({casesData.length})
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
@@ -332,7 +395,7 @@ export default function AdminSubDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {prisoner.productions.map((item) => (
+                    {productionsData.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-800/40 transition">
                         <td className="p-3.5 font-mono text-slate-200">{item.date}</td>
                         <td className="p-3.5">
@@ -365,14 +428,14 @@ export default function AdminSubDashboard() {
           {/* TAB 2: Registered Cases */}
           {activeTab === 'cases' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {prisoner.cases.map((c, index) => (
+              {casesData.map((c, index) => (
                 <div key={index} className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-3 relative">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[10px] font-mono uppercase text-slate-500">Case No.</span>
                       <h5 className="text-sm font-bold text-white font-mono">{c.caseNo}</h5>
                     </div>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${c.statusBg}`}>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold bg-amber-500/10 text-amber-400 border-amber-500/30">
                       {c.status}
                     </span>
                   </div>
@@ -404,34 +467,32 @@ export default function AdminSubDashboard() {
               </h4>
 
               <div className="space-y-4 max-w-xl">
-                {/* VC Percentage */}
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-300">Virtual Conference (VC) Appearances</span>
                     <span className="text-emerald-400 font-mono font-bold">
-                      {Math.round((prisoner.stats.vcCount / prisoner.stats.totalProductions) * 100)}%
+                      {Math.round((vcCount / totalProductions) * 100)}%
                     </span>
                   </div>
                   <div className="w-full bg-slate-950 rounded-full h-3 border border-slate-800 overflow-hidden">
                     <div
                       className="bg-emerald-500 h-full rounded-full"
-                      style={{ width: `${(prisoner.stats.vcCount / prisoner.stats.totalProductions) * 100}%` }}
+                      style={{ width: `${(vcCount / totalProductions) * 100}%` }}
                     ></div>
                   </div>
                 </div>
 
-                {/* In Person Percentage */}
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-300">Physical In-Court Escort</span>
                     <span className="text-amber-400 font-mono font-bold">
-                      {Math.round((prisoner.stats.inPersonCount / prisoner.stats.totalProductions) * 100)}%
+                      {Math.round((inPersonCount / totalProductions) * 100)}%
                     </span>
                   </div>
                   <div className="w-full bg-slate-950 rounded-full h-3 border border-slate-800 overflow-hidden">
                     <div
                       className="bg-amber-500 h-full rounded-full"
-                      style={{ width: `${(prisoner.stats.inPersonCount / prisoner.stats.totalProductions) * 100}%` }}
+                      style={{ width: `${(inPersonCount / totalProductions) * 100}%` }}
                     ></div>
                   </div>
                 </div>
@@ -440,7 +501,7 @@ export default function AdminSubDashboard() {
               <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-400 space-y-1">
                 <p className="font-semibold text-slate-200">📌 Security & Operational Summary:</p>
                 <p>• High reliance on VC hearings reduces escort requirement and security overhead.</p>
-                <p>• Physical escorts were strictly sanctioned for High Court & Special SC/ST trials.</p>
+                <p>• Presiding Court / Judge: {selectedPrisoner['Court Name'] || 'N/A'} ({selectedPrisoner.JudgeName || 'N/A'})</p>
               </div>
             </div>
           )}
@@ -452,9 +513,17 @@ export default function AdminSubDashboard() {
       )}
 
       {/* Cases & Peshi Details Modal Component */}
-      {showCasesModal && (
+      {showCasesModal && selectedPrisoner && (
         <CasesPeshiDetails
-          prisoner={prisoner}
+          prisoner={{
+            ...selectedPrisoner,
+            name: name,
+            utNumber: registerNo,
+            wardNo: wardNo,
+            policeStation: policeStation,
+            custodyStatus: custodyStatus,
+            cases: casesData
+          }}
           onClose={() => setShowCasesModal(false)}
         />
       )}

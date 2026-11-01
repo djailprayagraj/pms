@@ -3,6 +3,8 @@ import React from 'react';
 export default function CasesPeshiDetails({ prisoner, onClose }) {
   if (!prisoner) return null;
 
+  const casesList = prisoner.cases || [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-sans">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -14,7 +16,7 @@ export default function CasesPeshiDetails({ prisoner, onClose }) {
               <span>📑</span> Case & Production Details Breakdown
             </h3>
             <p className="text-xs text-slate-400 font-mono mt-0.5">
-              Prisoner: <strong className="text-red-400">{prisoner.name}</strong> ({prisoner.utNumber}) | Barrack/Ward: <strong className="text-slate-200">{prisoner.wardNo}</strong>
+              Prisoner: <strong className="text-red-400">{prisoner.name}</strong> (Register No: <strong className="text-red-400">{prisoner.utNumber}</strong>) | Ward/Barrack: <strong className="text-slate-200">{prisoner.wardNo}</strong>
             </p>
           </div>
           <button
@@ -35,7 +37,7 @@ export default function CasesPeshiDetails({ prisoner, onClose }) {
               <span className="text-slate-200 font-medium">{prisoner.policeStation}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">Assigned Barrack / Ward:</span>
+              <span className="text-slate-500 block">Assigned Ward / Barrack:</span>
               <span className="text-red-400 font-bold">{prisoner.wardNo}</span>
             </div>
             <div>
@@ -47,45 +49,45 @@ export default function CasesPeshiDetails({ prisoner, onClose }) {
           {/* Cases List */}
           <div className="space-y-4">
             <h4 className="text-xs font-mono font-semibold uppercase text-slate-400 tracking-wider">
-              Registered Cases & Warrant Statistics ({prisoner.cases.length})
+              Registered Cases & Warrant Statistics ({casesList.length})
             </h4>
 
             <div className="grid grid-cols-1 gap-4">
-              {prisoner.cases.map((c, index) => (
+              {casesList.map((c, index) => (
                 <div key={index} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4 hover:border-slate-700 transition">
                   
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-slate-800/80 pb-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase text-slate-500">Case / Crime No.</span>
                       <h5 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                        <span>{c.caseNo}</span>
-                        <span className="text-xs text-slate-400 font-normal">({c.firNo})</span>
+                        <span>{c.caseNo || prisoner['FIR/Case No']}</span>
+                        <span className="text-xs text-slate-400 font-normal">({c.firNo || prisoner['14-Digit FIR No']})</span>
                       </h5>
                     </div>
-                    <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md border font-semibold ${c.statusBg}`}>
-                      {c.status}
+                    <span className={`text-[10px] font-mono px-2.5 py-1 rounded-md border font-semibold ${c.statusBg || 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                      {c.status || 'Under Trial'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                     <div>
                       <span className="text-slate-500 font-mono block">Court Name:</span>
-                      <span className="text-slate-200 font-medium">{c.courtName}</span>
+                      <span className="text-slate-200 font-medium">{c.courtName || prisoner['Court Name']}</span>
                     </div>
                     <div>
                       <span className="text-slate-500 font-mono block">Sections Applied:</span>
-                      <span className="text-red-400 font-mono font-semibold">{c.sections}</span>
+                      <span className="text-red-400 font-mono font-semibold">{c.sections || prisoner['Act Section']}</span>
                     </div>
                     <div>
                       <span className="text-slate-500 font-mono block">Active Warrant Type:</span>
                       <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded font-mono text-[11px] inline-block mt-0.5">
-                        {c.warrantType || 'Sec 309 CrPC / 346 BNSS'}
+                        {c.warrantType || `Judge: ${prisoner.JudgeName || 'Standard'}`}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500 font-mono block">Release / Bail Date (Rihai):</span>
                       <span className="text-emerald-400 font-mono font-bold">
-                        {c.rihaiDate || (c.status.includes('Bail') ? 'Granted (15 Sep 2024)' : 'Under Trial (Pending)')}
+                        {c.rihaiDate || prisoner.ReleaseDate || 'Under Trial (Pending)'}
                       </span>
                     </div>
                   </div>
@@ -94,9 +96,9 @@ export default function CasesPeshiDetails({ prisoner, onClose }) {
                   <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800/60 flex flex-wrap justify-between items-center text-xs font-mono">
                     <span className="text-slate-400">Production Summary in this case:</span>
                     <div className="flex gap-4">
-                      <span>Total Hearings: <strong className="text-white">5</strong></span>
-                      <span>VC: <strong className="text-emerald-400">3</strong></span>
-                      <span>Physical: <strong className="text-amber-400">2</strong></span>
+                      <span>Total Hearings: <strong className="text-white">1</strong></span>
+                      <span>VC: <strong className="text-emerald-400">1</strong></span>
+                      <span>Physical: <strong className="text-amber-400">0</strong></span>
                     </div>
                   </div>
 

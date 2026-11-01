@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 
 import DashboardHeader from './DashboardHeader';
-import DashboardSidebar from './DashboardSidebar'; // 👈 Imported segregated sidebar
+import DashboardSidebar from './DashboardSidebar'; 
 import DashboardWorkingArea from './DashboardWorkingArea/DashboadWorkingArea';
 import ImportEprisonData from '../ImportData/ImportEprisonData';
 import WarrantWiseListAdalat from './DashboardWorkingArea/WarrantWiseListAdalat';
 import AllPrisonersList from '../AllPrisoners/AllPrisonersList';
+import AllConvictedPrisonersList from '../ConvictedPrisoners/AllConvictedPrisonersList'; // 👈 Imported Convicted component
 
 const Dashboard = ({ onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -35,6 +36,9 @@ const Dashboard = ({ onLogout }) => {
 
           {activeTab === 'all-prisoners' && <AllPrisonersList />}
 
+          {/* 🏛️ Render Convicted Prisoners Directory */}
+          {activeTab === 'convicted-prisoners' && <AllConvictedPrisonersList />}
+
           {activeTab === 'import-eprison' && (
             <ImportEprisonData onUploadSuccess={() => setActiveTab('dashboard')} />
           )}
@@ -43,7 +47,11 @@ const Dashboard = ({ onLogout }) => {
             <WarrantWiseListAdalat />
           )}
 
-          {activeTab !== 'dashboard' && activeTab !== 'all-prisoners' && activeTab !== 'import-eprison' && activeTab !== 'warrant-list' && (
+          {activeTab !== 'dashboard' && 
+           activeTab !== 'all-prisoners' && 
+           activeTab !== 'convicted-prisoners' && 
+           activeTab !== 'import-eprison' && 
+           activeTab !== 'warrant-list' && (
             <div className="h-full min-h-[400px] border-2 border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center p-8 text-center bg-slate-900/30">
               <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-3 text-slate-400 text-xl">
                 ⛓️

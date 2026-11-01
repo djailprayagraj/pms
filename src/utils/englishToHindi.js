@@ -89,13 +89,14 @@ export const openPrintPreview = async (groupedPrisonerRecords, filterMode, selec
           
           return `
             <tr class="even:bg-gray-50 border-b border-gray-400">
-              <td class="border border-gray-800 px-[1px] py-[0px] text-center font-bold english-num w-[3%] text-[8px] leading-tight"><span>${actualIndex + 1}</span></td>
-              <td class="border border-gray-800 px-[1px] py-[0px] font-semibold english-num w-[8%] text-[8px] leading-tight truncate"><span>${record.ut_code || 'N/A'}</span></td>
-              <td class="border border-gray-800 px-[2px] py-[0px] font-bold text-[8px] leading-tight w-[14%] truncate"><span class="english-num">${record.full_name_hi}</span></td>
-              <td class="border border-gray-800 px-[2px] py-[0px] text-[8px] leading-tight w-[14%] truncate"><span class="english-num">${record.father_name_hi}</span></td>
-              <td class="border border-gray-800 px-[1px] py-[0px] text-center font-semibold english-num w-[5%] text-[8px] leading-tight"><span>${record.barrack || 'N/A'}</span></td>
-              <td class="border border-gray-800 px-[1px] py-[0px] text-center font-bold english-num w-[28%] text-[8px] leading-tight"><span>${warrantsString || '167/187'}</span></td>
-              <td class="border border-gray-800 px-[1px] py-[0px] text-center english-num w-[28%] text-[8px] leading-tight"><span>${firsString || 'N/A'}</span></td>
+              <td class="border border-gray-800 px-[1px] py-[1px] text-center font-bold english-num w-[3%] text-[8px] leading-tight"><span>${actualIndex + 1}</span></td>
+              <td class="border border-gray-800 px-[1px] py-[1px] font-semibold english-num w-[7%] text-[8px] leading-tight truncate"><span>${record.ut_code || 'N/A'}</span></td>
+              <!-- Removed truncate, added break-words & whitespace-normal to prevent ... clipping -->
+              <td class="border border-gray-800 px-[2px] py-[1px] font-bold adjustable-name w-[24%] break-words whitespace-normal"><span class="english-num">${record.full_name_hi}</span></td>
+              <td class="border border-gray-800 px-[2px] py-[1px] adjustable-name w-[24%] break-words whitespace-normal"><span class="english-num">${record.father_name_hi}</span></td>
+              <td class="border border-gray-800 px-[1px] py-[1px] text-center font-semibold english-num w-[5%] text-[8px] leading-tight"><span>${record.barrack || 'N/A'}</span></td>
+              <td class="border border-gray-800 px-[1px] py-[1px] text-center font-bold english-num w-[18%] text-[7px] leading-tight"><span>${warrantsString || '167/187'}</span></td>
+              <td class="border border-gray-800 px-[1px] py-[1px] text-center english-num w-[19%] text-[7px] leading-tight"><span>${firsString || 'N/A'}</span></td>
             </tr>
           `;
         })
@@ -121,35 +122,61 @@ export const openPrintPreview = async (groupedPrisonerRecords, filterMode, selec
               font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
               font-variant-numeric: latin !important;
             }
+            .adjustable-name {
+              font-size: 9px;
+              line-height: 1.1;
+            }
             @media print {
-              body { padding: 0 !important; margin: 0 !important; background-color: #ffffff !important; font-size: 8px; }
+              body { padding: 0 !important; margin: 0 !important; background-color: #ffffff !important; }
               @page { size: A4 portrait; margin: 3mm; }
               tr { page-break-inside: avoid; }
               .signature-block { page-break-inside: avoid; margin-top: 8px !important; }
               .print-container { width: 100% !important; max-width: 100% !important; padding: 0 !important; border: none !important; box-shadow: none !important; }
-              .print-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 4px !important; align-items: start !important; }
               .no-print { display: none !important; }
             }
           </style>
+          <!-- Dynamic Print Stylesheet to enforce runtime choices during window.print() -->
+          <style id="dynamicPrintStyle">
+            .print-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 4px !important; align-items: start !important; }
+            .single-table-wrapper { display: none !important; }
+          </style>
         </head>
         <body class="text-black min-h-screen bg-white">
-          <div class="no-print w-full mb-4 bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-2xl flex justify-between items-center text-white">
+          <div class="no-print w-full mb-4 bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-2xl flex flex-wrap justify-between items-center gap-3 text-white">
             <div>
               <h3 class="text-xs font-bold font-mono">👁️ Full-Page Print Preview Mode (${subtitleText})</h3>
-              <p class="text-[10px] text-slate-400 font-mono">White background layout covering entire page width</p>
+              <p class="text-[10px] text-slate-400 font-mono">Customize view, font sizes, and layout before printing</p>
             </div>
-            <div class="flex items-center gap-3">
+            
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Layout Toggle Button -->
+              <button 
+                onclick="toggleLayout()" 
+                id="layoutToggleBtn"
+                class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition cursor-pointer flex items-center gap-1"
+              >
+                <span>📊</span> Switch to Inline Table View
+              </button>
+
+              <!-- Font Size Controls -->
+              <div class="flex items-center gap-1 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg">
+                <span class="text-[10px] text-slate-300 font-mono">Name Font:</span>
+                <button onclick="adjustFontSize(-1)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded text-xs cursor-pointer">-</button>
+                <span id="fontSizeDisplay" class="text-xs font-mono text-emerald-400 w-6 text-center">9px</span>
+                <button onclick="adjustFontSize(1)" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded text-xs cursor-pointer">+</button>
+              </div>
+
               <button 
                 onclick="window.print()" 
                 class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs shadow transition cursor-pointer flex items-center gap-1.5"
               >
-                <span>🖨️</span> Print Document
+                <span>🖨️</span> Print
               </button>
               <button 
                 onclick="window.close()" 
                 class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-1.5 rounded-lg text-xs transition cursor-pointer"
               >
-                Close Tab
+                Close
               </button>
             </div>
           </div>
@@ -166,17 +193,18 @@ export const openPrintPreview = async (groupedPrisonerRecords, filterMode, selec
               </div>
             </div>
 
-            <div class="print-grid grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
+            <!-- PARALLEL GRID VIEW -->
+            <div id="parallelGrid" class="print-grid grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
               <table class="w-full border-collapse border border-gray-800 text-[8px] text-left table-fixed">
                 <thead>
                   <tr class="bg-gray-200 border-b border-gray-800 text-black font-bold text-[7px] uppercase">
                     <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[3%]">S.No</th>
-                    <th class="border border-gray-800 px-[1px] py-[0px] w-[8%]">यू.टी. नं.</th>
-                    <th class="border border-gray-800 px-[2px] py-[0px] w-[14%]">बंदी का नाम</th>
-                    <th class="border border-gray-800 px-[2px] py-[0px] w-[14%]">पिता का नाम</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] w-[7%]">यू.टी. नं.</th>
+                    <th class="border border-gray-800 px-[2px] py-[0px] w-[24%]">बंदी का नाम</th>
+                    <th class="border border-gray-800 px-[2px] py-[0px] w-[24%]">पिता का नाम</th>
                     <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[5%]">बैरक</th>
-                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[28%]">वारंट टाइप</th>
-                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[28%]">एफ.आई.आर. नं.</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[18%]">वारंट टाइप</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[19%]">एफ.आई.आर. नं.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -188,16 +216,36 @@ export const openPrintPreview = async (groupedPrisonerRecords, filterMode, selec
                 <thead>
                   <tr class="bg-gray-200 border-b border-gray-800 text-black font-bold text-[7px] uppercase">
                     <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[3%]">S.No</th>
-                    <th class="border border-gray-800 px-[1px] py-[0px] w-[8%]">यू.टी. नं.</th>
-                    <th class="border border-gray-800 px-[2px] py-[0px] w-[14%]">बंदी का नाम</th>
-                    <th class="border border-gray-800 px-[2px] py-[0px] w-[14%]">पिता का नाम</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] w-[7%]">यू.टी. नं.</th>
+                    <th class="border border-gray-800 px-[2px] py-[0px] w-[24%]">बंदी का नाम</th>
+                    <th class="border border-gray-800 px-[2px] py-[0px] w-[24%]">पिता का नाम</th>
                     <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[5%]">बैरक</th>
-                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[28%]">वारंट टाइप</th>
-                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[28%]">एफ.आई.आर. नं.</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[18%]">वारंट टाइप</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[19%]">एफ.आई.आर. नं.</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${renderTableRows(rightRecords, leftRecords.length)}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- INLINE TABLE VIEW -->
+            <div id="singleTableWrapper" class="single-table-wrapper hidden w-full">
+              <table class="w-full border-collapse border border-gray-800 text-[8px] text-left table-fixed">
+                <thead>
+                  <tr class="bg-gray-200 border-b border-gray-800 text-black font-bold text-[7px] uppercase">
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[3%]">S.No</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] w-[7%]">यू.टी. नं.</th>
+                    <th class="border border-gray-800 px-[2px] py-[0px] w-[24%]">बंदी का नाम</th>
+                    <th class="border border-gray-800 px-[2px] py-[0px] w-[24%]">पिता का नाम</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[5%]">बैरक</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[18%]">वारंट टाइप</th>
+                    <th class="border border-gray-800 px-[1px] py-[0px] text-center w-[19%]">एफ.आई.आर. नं.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${renderTableRows(translatedRecords, 0)}
                 </tbody>
               </table>
             </div>
@@ -209,6 +257,49 @@ export const openPrintPreview = async (groupedPrisonerRecords, filterMode, selec
               </div>
             </div>
           </div>
+
+          <script>
+            let currentFontSize = 9;
+            function updatePrintStyles() {
+              const styleTag = document.getElementById('dynamicPrintStyle');
+              const isInline = document.getElementById('singleTableWrapper').classList.contains('hidden') === false;
+
+              styleTag.innerHTML = \`
+                .adjustable-name { font-size: \${currentFontSize}px !important; }
+                .print-grid { display: \${isInline ? 'none' : 'grid'} !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 4px !important; align-items: start !important; }
+                .single-table-wrapper { display: \${isInline ? 'block' : 'none'} !important; width: 100% !important; }
+              \`;
+            }
+
+            function adjustFontSize(delta) {
+              currentFontSize = Math.max(6, Math.min(16, currentFontSize + delta));
+              const elements = document.querySelectorAll('.adjustable-name');
+              elements.forEach(el => {
+                el.style.fontSize = currentFontSize + 'px';
+              });
+              document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
+              updatePrintStyles();
+            }
+
+            let isInline = false;
+            function toggleLayout() {
+              isInline = !isInline;
+              const parallelGrid = document.getElementById('parallelGrid');
+              const singleWrapper = document.getElementById('singleTableWrapper');
+              const btn = document.getElementById('layoutToggleBtn');
+
+              if (isInline) {
+                parallelGrid.classList.add('hidden');
+                singleWrapper.classList.remove('hidden');
+                btn.innerHTML = '<span>📊</span> Switch to Parallel Grid View';
+              } else {
+                singleWrapper.classList.add('hidden');
+                parallelGrid.classList.remove('hidden');
+                btn.innerHTML = '<span>📊</span> Switch to Inline Table View';
+              }
+              updatePrintStyles();
+            }
+          </script>
         </body>
       </html>
     `;

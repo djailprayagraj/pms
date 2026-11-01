@@ -10,6 +10,13 @@ const AllPrisonersList = () => {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState(null);
   
+  // 🌐 Server-side statistics state
+  const [stats, setStats] = useState({
+    totalCount: 0,
+    inCustodyCount: 0,
+    releasedCount: 0,
+  });
+
   const [selectedPrisoner, setSelectedPrisoner] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -28,6 +35,13 @@ const AllPrisonersList = () => {
       } else {
         setPrisoners((prev) => [...prev, ...newPrisoners]);
       }
+      
+      // 📊 Capture backend stats
+      setStats({
+        totalCount: data.totalCount || 0,
+        inCustodyCount: data.inCustodyCount || 0,
+        releasedCount: data.releasedCount || 0,
+      });
       
       if (pageNum >= data.totalPages || newPrisoners.length === 0) {
         setHasMore(false);
@@ -81,23 +95,54 @@ const AllPrisonersList = () => {
   return (
     <div className="space-y-6">
       
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-100 font-mono tracking-wide">All Prisoners Directory</h1>
-          <p className="text-xs text-slate-400 mt-0.5">Manage and inspect registered inmate records & case history</p>
+      {/* ================= HEADER & STATS CARDS ================= */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-100 font-mono tracking-wide">All Prisoners Directory</h1>
+            <p className="text-xs text-slate-400 mt-0.5">Manage and inspect registered inmate records & case history</p>
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <input
+              type="text"
+              placeholder="Search Register No, Name, FIR..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 transition"
+            />
+          </div>
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <input
-            type="text"
-            placeholder="Search Register No, Name, FIR..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 transition"
-          />
+        {/* Server-Side Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-mono uppercase text-slate-400">Total Database Records</p>
+              <h3 className="text-lg font-bold text-slate-100 font-mono mt-0.5">{stats.totalCount}</h3>
+            </div>
+            <span className="p-2 bg-slate-800 rounded-lg text-slate-400 text-base">📋</span>
+          </div>
+
+          <div className="bg-red-950/20 border border-red-900/40 p-3 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-mono uppercase text-red-400">Currently In Custody (IN)</p>
+              <h3 className="text-lg font-bold text-red-400 font-mono mt-0.5">{stats.inCustodyCount}</h3>
+            </div>
+            <span className="p-2 bg-red-950/50 border border-red-900/60 rounded-lg text-red-400 text-base">🔒</span>
+          </div>
+
+          <div className="bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-mono uppercase text-emerald-400">Released / Out of Jail (OUT)</p>
+              <h3 className="text-lg font-bold text-emerald-400 font-mono mt-0.5">{stats.releasedCount}</h3>
+            </div>
+            <span className="p-2 bg-emerald-950/50 border border-emerald-900/60 rounded-lg text-emerald-400 text-base">🔓</span>
+          </div>
         </div>
       </div>
 
+      {/* ================= DIRECTORY TABLE ================= */}
       <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
         
         <table className="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-300">
@@ -107,7 +152,7 @@ const AllPrisonersList = () => {
               <th className="w-1/4 px-6 py-3.5">Prisoner Name / Father</th>
               <th className="w-1/6 px-6 py-3.5">Age</th>
               <th className="w-1/6 px-6 py-3.5">Barrack</th>
-              <th className="w-1/6 px-6 py-3.5">Cases / Status</th>
+              <th className="w-1/6 px-6 py-3.5">Custody Status</th>
               <th className="w-1/6 px-6 py-3.5 text-right">Action</th>
             </tr>
           </thead>
@@ -147,7 +192,6 @@ const AllPrisonersList = () => {
                 if (!prisoner) return null;
 
                 const isReleased = prisoner['Release Date'] && prisoner['Release Date'].trim() !== "" && prisoner['Release Date'] !== " ";
-                const totalCases = prisoner.totalCasesCount || (prisoner.allCases ? prisoner.allCases.length : 1);
 
                 return (
                   <div
@@ -187,10 +231,12 @@ const AllPrisonersList = () => {
                     <div className="w-1/6 pr-2 flex items-center gap-2">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
-                          !isReleased ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          !isReleased 
+                            ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                         }`}
                       >
-                        {totalCases} {totalCases === 1 ? 'Case' : 'Cases'}
+                        {!isReleased ? '🔒 IN CUSTODY' : '🔓 RELEASED'}
                       </span>
                     </div>
 
