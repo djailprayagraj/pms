@@ -15,7 +15,7 @@ import {
 import HistorySection from './HistorySection';
 import SearchSection from './SearchSection';
 import StatsSection from './StatsSection';
-import WarrantWiseListAdalat from './WarrantWiseListAdalat';
+import WarrantWiseListAdalat from '../../../Components/WarrantTypeList/WarrantWiseListAdalat';
 
 const DashboardWorkingArea = () => {
   const dispatch = useDispatch();

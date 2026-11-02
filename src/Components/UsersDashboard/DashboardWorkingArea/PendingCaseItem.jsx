@@ -26,7 +26,16 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
     return sanitizeWarrantType(caseItem.warrantType || caseItem.warrant_type || '167/187');
   });
 
-  const [courtName, setCourtName] = useState(caseItem.courtName || caseItem.court_name || 'N/A');
+  const [courtName, setCourtName] = useState(() => {
+    return (
+      caseItem.courtName ||
+      caseItem.CourtName ||
+      caseItem['Court Name'] ||
+      caseItem.JudgeName ||
+      'N/A'
+    );
+  });
+
   const [isRiha, setIsRiha] = useState(
     Boolean(caseItem.isRiha || caseItem.is_riha || caseItem.custodyStatus === 'RIHA')
   );
@@ -77,6 +86,15 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
           if (matchedLog.custodyStatus !== undefined) {
             setIsRiha(matchedLog.custodyStatus === 'RIHA');
           }
+          if (
+            matchedLog.warrantCount !== undefined &&
+            matchedLog.warrantCount !== null &&
+            matchedLog.warrantCount !== 'N/A'
+          ) {
+            if (onCaseUpdate) {
+              onCaseUpdate(caseId, { warrantCount: matchedLog.warrantCount });
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to fetch individual record via fetchAdalatByDate:', error);
@@ -88,7 +106,7 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
     return () => {
       isMounted = false;
     };
-  }, [caseItem, isBlankRow]);
+  }, [caseItem, isBlankRow, caseId, onCaseUpdate]);
 
   const handleWarrantChange = (type) => {
     setWarrantType(type);
@@ -122,7 +140,6 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
   };
 
   const handleRowClick = (e) => {
-    // Prevent triggering selection toggle if clicking directly inside an input or select
     if (['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(e.target.tagName)) {
       return;
     }
@@ -137,7 +154,7 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
           ? 'bg-red-950/35 border-l-4 border-l-red-500'
           : isBlankRow
           ? 'bg-amber-950/20 hover:bg-amber-900/30 text-amber-200 border-l-4 border-l-amber-500'
-          : 'hover:bg-slate-800/60'
+          : 'hover:bg-slate-800/60 text-slate-300'
       }`}
     >
       {/* UT Number */}
@@ -236,7 +253,7 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
           type="text"
           value={courtName}
           onChange={handleCourtChange}
-          placeholder="Type court name..."
+          placeholder="ALLAHABAD DISTRICT COURT"
           className="bg-slate-950 border border-slate-800 focus:border-indigo-500 text-indigo-300 px-2 py-1 rounded text-[10px] font-bold transition focus:outline-none w-[130px]"
         />
       </td>
@@ -259,27 +276,18 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
         </div>
       </td>
 
-      {/* Status Select (IN JAIL / RIHA) & Selection Checkbox / Indicator */}
+      {/* Status Select (IN JAIL / RIHA) */}
       <td className="p-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <select
-            value={isRiha ? 'riha' : 'active'}
-            onChange={handleStatusChange}
-            className={`px-2 py-1 rounded text-[10px] font-bold border transition focus:outline-none cursor-pointer ${
-              isRiha ? 'bg-emerald-950/90 border-emerald-800 text-emerald-300' : 'bg-red-950/90 border-red-900 text-red-300'
-            }`}
-          >
-            <option value="active" className="bg-slate-900 text-red-300">IN JAIL</option>
-            <option value="riha" className="bg-slate-900 text-emerald-300">RIHA</option>
-          </select>
-
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={() => dispatch(toggleSelectCase(caseId))}
-            className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-          />
-        </div>
+        <select
+          value={isRiha ? 'riha' : 'active'}
+          onChange={handleStatusChange}
+          className={`px-2 py-1 rounded text-[10px] font-bold border transition focus:outline-none cursor-pointer ${
+            isRiha ? 'bg-emerald-950/90 border-emerald-800 text-emerald-300' : 'bg-red-950/90 border-red-900 text-red-300'
+          }`}
+        >
+          <option value="active" className="bg-slate-900 text-red-300">IN JAIL</option>
+          <option value="riha" className="bg-slate-900 text-emerald-300">RIHA</option>
+        </select>
       </td>
     </tr>
   );

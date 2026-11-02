@@ -4,7 +4,7 @@ import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar'; 
 import DashboardWorkingArea from './DashboardWorkingArea/DashboadWorkingArea';
 import ImportEprisonData from '../ImportData/ImportEprisonData';
-import WarrantWiseListAdalat from './DashboardWorkingArea/WarrantWiseListAdalat';
+import WarrantWiseListAdalat from '../../Components/WarrantTypeList/WarrantWiseListAdalat';
 import AllPrisonersList from '../AllPrisoners/AllPrisonersList';
 import AllConvictedPrisonersList from '../ConvictedPrisoners/AllConvictedPrisonersList'; // 👈 Imported Convicted component
 
@@ -44,7 +44,7 @@ const Dashboard = ({ onLogout }) => {
           )}
 
           {activeTab === 'warrant-list' && (
-            <WarrantWiseListAdalat />
+           <WarrantWiseListAdalat /> 
           )}
 
           {activeTab !== 'dashboard' && 

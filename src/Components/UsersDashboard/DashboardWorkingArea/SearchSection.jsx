@@ -33,6 +33,7 @@ const SearchSection = ({ handleSearch }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, type: 'success', title: '', message: '', key: 0 });
+  const [prisonerWarrantCount, setPrisonerWarrantCount] = useState('');
 
   // Map to store inline row modifications keyed by specific caseId
   const [modifiedCases, setModifiedCases] = useState({});
@@ -54,6 +55,16 @@ const SearchSection = ({ handleSearch }) => {
       dispatch(setSubmitSuccess(null));
     }
   }, [submitSuccess, dispatch]);
+
+  // Sync warrantCount from DB record into the top input field when loaded
+  useEffect(() => {
+    const firstModifiedWithCount = Object.values(modifiedCases).find(
+      (m) => m.warrantCount !== undefined && m.warrantCount !== null && m.warrantCount !== 'N/A'
+    );
+    if (firstModifiedWithCount && prisonerWarrantCount === '') {
+      setPrisonerWarrantCount(firstModifiedWithCount.warrantCount);
+    }
+  }, [modifiedCases, prisonerWarrantCount]);
 
   const uniqueCases = React.useMemo(() => {
     const sourceList = prisonerResult?.rawData || prisonerResult?.cases || [];
@@ -90,13 +101,13 @@ const SearchSection = ({ handleSearch }) => {
           psName: currentCase['PS Name'] || currentCase.psName || currentCase.police_station || 'N/A',
           district: 'Prayagraj',
           warrantType: extractedWarrantType,
-          courtName: currentCase.CourtName || currentCase['Court Name'] || currentCase.courtName || currentCase.JudgeName || 'DJ',
+          courtName: currentCase.CourtName || currentCase['Court Name'] || currentCase.courtName || currentCase.JudgeName || '',
         });
       }
       return acc;
     }, []);
 
-    // Append a fully blank/editable custom row at the bottom for new Talbi entries (unselected by default)
+    // Append a fully blank/editable custom row at the bottom for new Talbi entries
     if (prisonerResult) {
       const fallbackUt = prisonerResult.utNumber || prisonerResult.ut_code || prisonerResult.utNo || '';
       const fallbackName = prisonerResult.prisonerName || prisonerResult.full_name || prisonerResult.name || '';
@@ -144,70 +155,72 @@ const SearchSection = ({ handleSearch }) => {
     const defaultFatherName = prisonerResult?.fatherName || prisonerResult?.father_name || prisonerResult?.guardianName || 'N/A';
     const defaultUtNo = prisonerResult?.utNumber || prisonerResult?.ut_code || prisonerResult?.utNo || 'N/A';
 
-    const candidateEntries = uniqueCases
-      .filter((c) => selectedCaseIds.includes(c.id || `${c.utNumber}-${c.firNo}`))
-      .map((c) => {
-        const caseId = c.id || `${c.utNumber}-${c.firNo}`;
-        const userEdits = modifiedCases[caseId] || {};
+    try {
+      const candidateEntries = uniqueCases
+        .filter((c) => selectedCaseIds.includes(c.id || `${c.utNumber}-${c.firNo}`))
+        .map((c) => {
+          const caseId = c.id || `${c.utNumber}-${c.firNo}`;
+          const userEdits = modifiedCases[caseId] || {};
 
-        const finalUtNo = userEdits.utNumber !== undefined ? userEdits.utNumber : c.utNumber;
-        const finalPrisonerName = userEdits.prisonerName !== undefined ? userEdits.prisonerName : c.prisonerName;
-        const finalFatherName = userEdits.fatherName !== undefined ? userEdits.fatherName : c.fatherName;
-        const finalFir = userEdits.firNo !== undefined ? userEdits.firNo : c.firNo;
-        const finalActSection = userEdits.actSection !== undefined ? userEdits.actSection : c.actSection;
-        const finalPsName = userEdits.psName !== undefined ? userEdits.psName : c.psName;
-        const finalCourtName = userEdits.courtName || c.courtName || 'DJ';
-        const finalWarrantType = userEdits.warrantType || c.warrantType || '167/187';
-        const finalIsRiha = userEdits.isRiha !== undefined ? userEdits.isRiha : Boolean(c.isRiha);
+          const finalUtNo = userEdits.utNumber !== undefined ? userEdits.utNumber : c.utNumber;
+          const finalPrisonerName = userEdits.prisonerName !== undefined ? userEdits.prisonerName : c.prisonerName;
+          const finalFatherName = userEdits.fatherName !== undefined ? userEdits.fatherName : c.fatherName;
+          const finalFir = userEdits.firNo !== undefined ? userEdits.firNo : c.firNo;
+          const finalActSection = userEdits.actSection !== undefined ? userEdits.actSection : c.actSection;
+          const finalPsName = userEdits.psName !== undefined ? userEdits.psName : c.psName;
+          const finalCourtName = userEdits.courtName !== undefined ? userEdits.courtName : (c.courtName || 'ALLAHABAD DISTRICT COURT');
+          const finalWarrantType = userEdits.warrantType || c.warrantType || '167/187';
+          const finalIsRiha = userEdits.isRiha !== undefined ? userEdits.isRiha : Boolean(c.isRiha);
+          const finalWarrantCount = userEdits.warrantCount !== undefined ? userEdits.warrantCount : prisonerWarrantCount;
 
-        if (c.isCustomBlank && (!finalFir || finalFir.trim() === '')) {
-          throw new Error('Please enter a valid FIR/Case Number for the new Talbi entry.');
-        }
+          if (c.isCustomBlank && (!finalFir || finalFir.trim() === '')) {
+            throw new Error('Please enter a valid FIR/Case Number for the new Talbi entry.');
+          }
 
-        return {
-          utNumber: finalUtNo || defaultUtNo,
-          prisonerName: finalPrisonerName || defaultPrisonerName,
-          fatherName: finalFatherName || defaultFatherName,
-          barrack: c.barrack || prisonerResult.barrack || 'N/A',
-          firNumber: finalFir || 'N/A',
-          actSection: finalActSection || 'N/A',
-          psName: finalPsName || 'N/A',
-          hearingDate: selectedDate || new Date().toISOString().split('T')[0],
-          appearanceMode: subOption === 'vc' ? 'VC' : 'SESSION_ADALAT',
-          actionCategory: mainAction || 'Jail Adalat',
-          attended: true,
-          nonAttendanceReason: 'N/A',
-          remarks: c.isCustomBlank ? 'New Court/FIR Talbi Entry' : '',
-          courtName: finalCourtName,
-          district: c.district || 'Prayagraj',
-          custodyStatus: finalIsRiha ? 'RIHA' : 'ACTIVE_CUSTODY',
-          warrantType: finalWarrantType,
-          id: caseId,
-          ut_code: finalUtNo || defaultUtNo,
-          full_name: finalPrisonerName || defaultPrisonerName,
-          father_name: finalFatherName || defaultFatherName,
-          fir_number: finalFir,
-          legal_provision: finalWarrantType,
-          sub_option: subOption,
-          is_riha: finalIsRiha,
-          created_at: new Date().toLocaleTimeString(),
-        };
+          return {
+            utNumber: finalUtNo || defaultUtNo,
+            prisonerName: finalPrisonerName || defaultPrisonerName,
+            fatherName: finalFatherName || defaultFatherName,
+            barrack: c.barrack || prisonerResult.barrack || 'N/A',
+            firNumber: finalFir || 'N/A',
+            actSection: finalActSection || 'N/A',
+            psName: finalPsName || 'N/A',
+            hearingDate: selectedDate || new Date().toISOString().split('T')[0],
+            appearanceMode: subOption === 'vc' ? 'VC' : 'SESSION_ADALAT',
+            actionCategory: mainAction || 'Jail Adalat',
+            attended: true,
+            nonAttendanceReason: 'N/A',
+            remarks: c.isCustomBlank ? 'New Court/FIR Talbi Entry' : '',
+            courtName: finalCourtName,
+            district: c.district || 'Prayagraj',
+            custodyStatus: finalIsRiha ? 'RIHA' : 'ACTIVE_CUSTODY',
+            warrantType: finalWarrantType,
+            warrantCount: finalWarrantCount !== '' ? Number(finalWarrantCount) : 'N/A',
+            id: caseId,
+            ut_code: finalUtNo || defaultUtNo,
+            full_name: finalPrisonerName || defaultPrisonerName,
+            father_name: finalFatherName || defaultFatherName,
+            fir_number: finalFir,
+            legal_provision: finalWarrantType,
+            sub_option: subOption,
+            is_riha: finalIsRiha,
+            created_at: new Date().toLocaleTimeString(),
+          };
+        });
+
+      const newUniqueEntries = candidateEntries.filter((candidate) => {
+        return !historyRecords.some(
+          (existing) =>
+            (existing.utNumber || existing.ut_code) === candidate.utNumber &&
+            (existing.firNumber || existing.fir_number) === candidate.firNumber
+        );
       });
 
-    const newUniqueEntries = candidateEntries.filter((candidate) => {
-      return !historyRecords.some(
-        (existing) =>
-          (existing.utNumber || existing.ut_code) === candidate.utNumber &&
-          (existing.firNumber || existing.fir_number) === candidate.firNumber
-      );
-    });
+      if (newUniqueEntries.length === 0) {
+        dispatch(setErrorMsg('Selected entry/entries already exist in the History Log!'));
+        return;
+      }
 
-    if (newUniqueEntries.length === 0) {
-      dispatch(setErrorMsg('Selected entry/entries already exist in the History Log!'));
-      return;
-    }
-
-    try {
       setIsSubmitting(true);
       const res = await postAdalatEntries(newUniqueEntries);
       if (res && res.success !== false) {
@@ -216,7 +229,7 @@ const SearchSection = ({ handleSearch }) => {
       }
     } catch (error) {
       console.error('Error posting entries to backend:', error);
-      dispatch(setErrorMsg(error.response?.data?.message || error.message || 'Failed to sync with database'));
+      dispatch(setErrorMsg(error.message || 'Failed to sync with database'));
     } finally {
       setIsSubmitting(false);
     }
@@ -355,7 +368,20 @@ const SearchSection = ({ handleSearch }) => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-mono">
+              {/* Warrant Count Input & Badges */}
+              <div className="flex items-center gap-3 text-xs font-mono flex-wrap">
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded text-slate-300">
+                  <span>Warrants:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={prisonerWarrantCount}
+                    placeholder="N/A"
+                    onChange={(e) => setPrisonerWarrantCount(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-12 bg-slate-950 border border-slate-700 focus:border-amber-500 text-amber-300 px-1.5 py-0.5 rounded text-xs font-bold text-center focus:outline-none"
+                  />
+                </div>
                 <div className="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded text-slate-300">
                   Gender: <span className="text-white font-bold">{prisonerResult.gender || 'M'}</span>
                 </div>
@@ -391,7 +417,7 @@ const SearchSection = ({ handleSearch }) => {
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl space-y-3 p-4">
           <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
             <span>Pending FIR / Case Records ({uniqueCases.length})</span>
-            <span className="text-emerald-400">Click row or checkbox to select/unselect for feeding</span>
+            <span className="text-emerald-400">Click anywhere on a row to select/unselect for feeding</span>
           </div>
 
           <div className="max-h-[380px] overflow-y-auto overflow-x-auto rounded-lg border border-slate-800">
