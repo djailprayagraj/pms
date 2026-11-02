@@ -34,7 +34,7 @@ const SearchSection = ({ handleSearch }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, type: 'success', title: '', message: '', key: 0 });
 
-  // Map to store inline row modifications keyed by specific caseId (UT-FIR)
+  // Map to store inline row modifications keyed by specific caseId
   const [modifiedCases, setModifiedCases] = useState({});
 
   const showToast = (type, title, message) => {
@@ -57,9 +57,8 @@ const SearchSection = ({ handleSearch }) => {
 
   const uniqueCases = React.useMemo(() => {
     const sourceList = prisonerResult?.rawData || prisonerResult?.cases || [];
-    if (!sourceList.length) return [];
-
-    return sourceList.reduce((acc, currentCase) => {
+    
+    const processedCases = sourceList.reduce((acc, currentCase) => {
       const rawFir = currentCase.firNo || currentCase['FIR/Case No'] || currentCase.fir_number || '';
       const normalizedFir = rawFir.toString().trim().replace(/^(fir|cr|case)\s*[-:]?/i, '').replace(/[\s-]+/g, '').toUpperCase();
       
@@ -96,9 +95,34 @@ const SearchSection = ({ handleSearch }) => {
       }
       return acc;
     }, []);
-  }, [prisonerResult]);
 
-  // Handler to sync local edits from PendingCaseItem to SearchSection state
+    // Append a fully blank/editable custom row at the bottom for new Talbi entries (unselected by default)
+    if (prisonerResult) {
+      const fallbackUt = prisonerResult.utNumber || prisonerResult.ut_code || prisonerResult.utNo || '';
+      const fallbackName = prisonerResult.prisonerName || prisonerResult.full_name || prisonerResult.name || '';
+      const fallbackFather = prisonerResult.fatherName || prisonerResult.father_name || prisonerResult.guardianName || '';
+      const blankCaseId = `custom-blank-${fallbackUt || 'new'}`;
+
+      const userEdits = modifiedCases[blankCaseId] || {};
+
+      processedCases.push({
+        id: blankCaseId,
+        firNo: userEdits.firNo !== undefined ? userEdits.firNo : '',
+        utNumber: userEdits.utNumber !== undefined ? userEdits.utNumber : fallbackUt,
+        prisonerName: userEdits.prisonerName !== undefined ? userEdits.prisonerName : fallbackName,
+        fatherName: userEdits.fatherName !== undefined ? userEdits.fatherName : fallbackFather,
+        actSection: userEdits.actSection !== undefined ? userEdits.actSection : '',
+        psName: userEdits.psName !== undefined ? userEdits.psName : '',
+        district: 'Prayagraj',
+        warrantType: userEdits.warrantType !== undefined ? userEdits.warrantType : '167/187',
+        courtName: userEdits.courtName !== undefined ? userEdits.courtName : '',
+        isCustomBlank: true,
+      });
+    }
+
+    return processedCases;
+  }, [prisonerResult, modifiedCases]);
+
   const handleCaseUpdate = (caseId, updatedFields) => {
     setModifiedCases((prev) => ({
       ...prev,
@@ -116,9 +140,9 @@ const SearchSection = ({ handleSearch }) => {
       return;
     }
 
-    const prisonerName = prisonerResult.prisonerName || prisonerResult.full_name || prisonerResult.name || 'N/A';
-    const fatherName = prisonerResult.fatherName || prisonerResult.father_name || prisonerResult.guardianName || 'N/A';
-    const utNo = prisonerResult.utNumber || prisonerResult.ut_code || prisonerResult.utNo || 'N/A';
+    const defaultPrisonerName = prisonerResult?.prisonerName || prisonerResult?.full_name || prisonerResult?.name || 'N/A';
+    const defaultFatherName = prisonerResult?.fatherName || prisonerResult?.father_name || prisonerResult?.guardianName || 'N/A';
+    const defaultUtNo = prisonerResult?.utNumber || prisonerResult?.ut_code || prisonerResult?.utNo || 'N/A';
 
     const candidateEntries = uniqueCases
       .filter((c) => selectedCaseIds.includes(c.id || `${c.utNumber}-${c.firNo}`))
@@ -126,33 +150,43 @@ const SearchSection = ({ handleSearch }) => {
         const caseId = c.id || `${c.utNumber}-${c.firNo}`;
         const userEdits = modifiedCases[caseId] || {};
 
-        // Resolve edited values or fallback to case defaults
-        const finalWarrantType = userEdits.warrantType || c.warrantType || '167/187';
+        const finalUtNo = userEdits.utNumber !== undefined ? userEdits.utNumber : c.utNumber;
+        const finalPrisonerName = userEdits.prisonerName !== undefined ? userEdits.prisonerName : c.prisonerName;
+        const finalFatherName = userEdits.fatherName !== undefined ? userEdits.fatherName : c.fatherName;
+        const finalFir = userEdits.firNo !== undefined ? userEdits.firNo : c.firNo;
+        const finalActSection = userEdits.actSection !== undefined ? userEdits.actSection : c.actSection;
+        const finalPsName = userEdits.psName !== undefined ? userEdits.psName : c.psName;
         const finalCourtName = userEdits.courtName || c.courtName || 'DJ';
+        const finalWarrantType = userEdits.warrantType || c.warrantType || '167/187';
         const finalIsRiha = userEdits.isRiha !== undefined ? userEdits.isRiha : Boolean(c.isRiha);
 
+        if (c.isCustomBlank && (!finalFir || finalFir.trim() === '')) {
+          throw new Error('Please enter a valid FIR/Case Number for the new Talbi entry.');
+        }
+
         return {
-          utNumber: c.utNumber || utNo,
-          prisonerName: c.prisonerName || prisonerName,
-          fatherName: c.fatherName || fatherName,
+          utNumber: finalUtNo || defaultUtNo,
+          prisonerName: finalPrisonerName || defaultPrisonerName,
+          fatherName: finalFatherName || defaultFatherName,
           barrack: c.barrack || prisonerResult.barrack || 'N/A',
-          firNumber: c.firNo || 'N/A',
-          actSection: c.actSection || 'N/A',
+          firNumber: finalFir || 'N/A',
+          actSection: finalActSection || 'N/A',
+          psName: finalPsName || 'N/A',
           hearingDate: selectedDate || new Date().toISOString().split('T')[0],
           appearanceMode: subOption === 'vc' ? 'VC' : 'SESSION_ADALAT',
           actionCategory: mainAction || 'Jail Adalat',
           attended: true,
           nonAttendanceReason: 'N/A',
-          remarks: '',
+          remarks: c.isCustomBlank ? 'New Court/FIR Talbi Entry' : '',
           courtName: finalCourtName,
           district: c.district || 'Prayagraj',
           custodyStatus: finalIsRiha ? 'RIHA' : 'ACTIVE_CUSTODY',
           warrantType: finalWarrantType,
           id: caseId,
-          ut_code: c.utNumber || utNo,
-          full_name: c.prisonerName || prisonerName,
-          father_name: c.fatherName || fatherName,
-          fir_number: c.firNo,
+          ut_code: finalUtNo || defaultUtNo,
+          full_name: finalPrisonerName || defaultPrisonerName,
+          father_name: finalFatherName || defaultFatherName,
+          fir_number: finalFir,
           legal_provision: finalWarrantType,
           sub_option: subOption,
           is_riha: finalIsRiha,
@@ -162,8 +196,8 @@ const SearchSection = ({ handleSearch }) => {
 
     const newUniqueEntries = candidateEntries.filter((candidate) => {
       return !historyRecords.some(
-        (existing) => 
-          (existing.utNumber || existing.ut_code) === candidate.utNumber && 
+        (existing) =>
+          (existing.utNumber || existing.ut_code) === candidate.utNumber &&
           (existing.firNumber || existing.fir_number) === candidate.firNumber
       );
     });
@@ -178,7 +212,7 @@ const SearchSection = ({ handleSearch }) => {
       const res = await postAdalatEntries(newUniqueEntries);
       if (res && res.success !== false) {
         dispatch(addHistoryEntries(newUniqueEntries));
-        dispatch(setSubmitSuccess(`${newUniqueEntries.length} unique entry(s) successfully synced to database!`));
+        dispatch(setSubmitSuccess(`${newUniqueEntries.length} entry(s) successfully synced to database!`));
       }
     } catch (error) {
       console.error('Error posting entries to backend:', error);
@@ -357,7 +391,7 @@ const SearchSection = ({ handleSearch }) => {
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl space-y-3 p-4">
           <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
             <span>Pending FIR / Case Records ({uniqueCases.length})</span>
-            <span className="text-emerald-400">Click row to select • Edits apply on feeding</span>
+            <span className="text-emerald-400">Click row or checkbox to select/unselect for feeding</span>
           </div>
 
           <div className="max-h-[380px] overflow-y-auto overflow-x-auto rounded-lg border border-slate-800">
