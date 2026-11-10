@@ -6,6 +6,7 @@ import Dashboard from './Components/UsersDashboard/Dashboard';
 import './App.css';
 import AddUserPage from './Components/admin/AddUserPage';
 import { BaseURL } from './BaseURL/Baseurl';
+import UniversalUpdateComponent from './Components/UniversalUpdate/UniversalUpdateComponent';
 
 function App() {
   const navigate = useNavigate();
@@ -34,36 +35,40 @@ function App() {
       {/* 1. Public Routes (Redirects to dashboard if already logged in) */}
       <Route element={<PublicRoute />}>
         <Route 
-          path="/login"                                                          //   /login
+          path="/login"                                                      //   /login
           element={<LoginPage2 onLoginSuccess={handleLoginSuccess} />} 
         />
         {/* Default route redirecting to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Route>
 
-
-
-      {/* 2. Admin Protected Route */}
+      {/* 2. Admin Protected Routes */}
       <Route element={<ProtectedRoute allowedRole="admin" />}>
         <Route 
-          path="/admin"                                                        //   /admin
+          path="/admin"                                                      //   /admin
           element={<AdminDashboard onLogout={handleLogout} />} 
         />
       </Route>
 
-
-       <Route element={<ProtectedRoute allowedRole="admin" />}>
+      <Route element={<ProtectedRoute allowedRole="admin" />}>
         <Route 
-          path="/admin/addUser"                                                 //   /admin/addUser
+          path="/admin/addUser"                                              //   /admin/addUser
           element={<AddUserPage />} 
         />
       </Route>
-      
+
+      {/* Brand New Route for Universal Adalat Log Management */}
+      <Route element={<ProtectedRoute allowedRole="staff" />}>
+        <Route 
+          path="/universal-update"                                     //   /admin/universal-update
+          element={<UniversalUpdateComponent />} 
+        />
+      </Route>
 
       {/* 3. Standard User / Staff Protected Route */}
-      <Route element={<ProtectedRoute allowedRole="staff" /> /* or omit allowedRole if any logged-in user can access */}>
+      <Route element={<ProtectedRoute allowedRole="staff" />}>
         <Route 
-          path="/dashboard"                                                      //   /dashboard
+          path="/dashboard"                                                  //   /dashboard
           element={<Dashboard onLogout={handleLogout} />}
         />
       </Route>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { toggleSelectCase } from '../../../redux/slices/adalatSlice';
-import { fetchAdalatByDate } from '../../../api/adalatService';
+import { fetchAdalatByDate, allCourtsList, feedNewCourt } from '../../../api/adalatService';
+import SelectCourt from './SelectCourt'; // Adjust path to where your SelectCourt component is located
 
 const sanitizeWarrantType = (val) => {
   const allowed = ['167/187', '209/232', '309/346'];
@@ -19,7 +20,9 @@ const getFormattedTodayDate = () => {
 
 const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
   const dispatch = useDispatch();
-  const caseId = caseItem.id || `${caseItem.utNumber}-${caseItem.firNo}`;
+  
+  // Unique row identifier combining UT Number and FIR No to avoid overlapping state across multiple FIRs
+  const caseId = caseItem.id || `${caseItem.utNumber}-${caseItem.firNo || caseItem.firNumber}`;
   const isBlankRow = Boolean(caseItem.isCustomBlank);
 
   const [warrantType, setWarrantType] = useState(() => {
@@ -32,7 +35,7 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
       caseItem.CourtName ||
       caseItem['Court Name'] ||
       caseItem.JudgeName ||
-      'N/A'
+      ''
     );
   });
 
@@ -115,6 +118,7 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
     }
   };
 
+  // Distinct handler per row sending updates up via caseId key
   const handleCourtChange = (e) => {
     const val = e.target.value;
     setCourtName(val);
@@ -247,14 +251,12 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
         )}
       </td>
 
-      {/* Pending Court Input Field */}
+      {/* Pending Court Dropdown Component Field */}
       <td className="p-3 text-slate-300 font-sans relative">
-        <input
-          type="text"
+        <SelectCourt
           value={courtName}
           onChange={handleCourtChange}
-          placeholder="ALLAHABAD DISTRICT COURT"
-          className="bg-slate-950 border border-slate-800 focus:border-indigo-500 text-indigo-300 px-2 py-1 rounded text-[10px] font-bold transition focus:outline-none w-[130px]"
+          placeholder="Select Court..."
         />
       </td>
 

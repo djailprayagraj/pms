@@ -26,6 +26,7 @@ const initialState = {
   peshiRemarks: '',
   isSubmitting: false,
   historyRecords: [],
+  courtsList: [], // --- Added courtsList to initial state ---
 };
 
 export const adalatSlice = createSlice({
@@ -113,12 +114,15 @@ export const adalatSlice = createSlice({
       const newEntries = Array.isArray(action.payload) ? action.payload : [action.payload];
       state.historyRecords = [...newEntries, ...state.historyRecords];
     },
-    // --- Added removeHistoryEntry reducer ---
     removeHistoryEntry: (state, action) => {
       const targetId = action.payload;
       state.historyRecords = state.historyRecords.filter(
         (record, index) => (record.id || index) !== targetId
       );
+    },
+    // --- Added setCourtsList reducer ---
+    setCourtsList: (state, action) => {
+      state.courtsList = action.payload;
     },
     clearSearchAlerts: (state) => {
       state.errorMsg = '';
@@ -151,6 +155,7 @@ export const {
   setSearchTab,
   setPart1,
   setPart2,
+  searchName,
   setSearchName,
   setSearchCrime,
   setPeshiDate,
@@ -167,7 +172,8 @@ export const {
   setIsSubmitting,
   addHistoryRecord,
   addHistoryEntries,
-  removeHistoryEntry, // Exported properly here
+  removeHistoryEntry,
+  setCourtsList, // --- Exported setCourtsList ---
   clearSearchAlerts,
   resetAdalatForm,
   resetSearchForm,

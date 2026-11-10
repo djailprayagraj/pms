@@ -13,6 +13,7 @@ import Toast from '../../Popups/Toast';
 import { postAdalatEntries } from '../../../api/adalatService';
 import NameAndFatherNameSearch from './NameAndFatherNameSearch';
 import PendingCaseItem from './PendingCaseItem';
+import SelectCourt from './SelectCourt';
 
 const SearchSection = ({ handleSearch }) => {
   const dispatch = useDispatch();
@@ -24,7 +25,7 @@ const SearchSection = ({ handleSearch }) => {
   const loading = useSelector((state) => state.adalat?.loading);
   const errorMsg = useSelector((state) => state.adalat?.errorMsg);
   const submitSuccess = useSelector((state) => state.adalat?.submitSuccess);
-  const prisonerResult = useSelector((state) => state.adalat?.prisonerResult);
+  const prisonerResult = useSelector((state) => state.adalat?.prisonerResult);     // all the data regarding a prisoner is coming from here 
   const selectedCaseIds = useSelector((state) => state.adalat?.selectedCaseIds || []);
   const mainAction = useSelector((state) => state.adalat?.mainAction);
   const subOption = useSelector((state) => state.adalat?.subOption);
@@ -66,6 +67,7 @@ const SearchSection = ({ handleSearch }) => {
     }
   }, [modifiedCases, prisonerWarrantCount]);
 
+  // all the unique cases of a prisoner is coming from here and being passed as props to PendingCasesItem component 
   const uniqueCases = React.useMemo(() => {
     const sourceList = prisonerResult?.rawData || prisonerResult?.cases || [];
     
@@ -168,7 +170,7 @@ const SearchSection = ({ handleSearch }) => {
           const finalFir = userEdits.firNo !== undefined ? userEdits.firNo : c.firNo;
           const finalActSection = userEdits.actSection !== undefined ? userEdits.actSection : c.actSection;
           const finalPsName = userEdits.psName !== undefined ? userEdits.psName : c.psName;
-          const finalCourtName = userEdits.courtName !== undefined ? userEdits.courtName : (c.courtName || 'ALLAHABAD DISTRICT COURT');
+          const finalCourtName = userEdits.courtName !== undefined ? userEdits.courtName : (c.courtName || 'N/A');
           const finalWarrantType = userEdits.warrantType || c.warrantType || '167/187';
           const finalIsRiha = userEdits.isRiha !== undefined ? userEdits.isRiha : Boolean(c.isRiha);
           const finalWarrantCount = userEdits.warrantCount !== undefined ? userEdits.warrantCount : prisonerWarrantCount;
@@ -222,7 +224,7 @@ const SearchSection = ({ handleSearch }) => {
       }
 
       setIsSubmitting(true);
-      const res = await postAdalatEntries(newUniqueEntries);
+      const res = await postAdalatEntries(newUniqueEntries); 
       if (res && res.success !== false) {
         dispatch(addHistoryEntries(newUniqueEntries));
         dispatch(setSubmitSuccess(`${newUniqueEntries.length} entry(s) successfully synced to database!`));
@@ -417,6 +419,7 @@ const SearchSection = ({ handleSearch }) => {
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl space-y-3 p-4">
           <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
             <span>Pending FIR / Case Records ({uniqueCases.length})</span>
+      <div><SelectCourt/></div>
             <span className="text-emerald-400">Click anywhere on a row to select/unselect for feeding</span>
           </div>
 

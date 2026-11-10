@@ -3,7 +3,7 @@ import { BaseURL } from '../BaseURL/Baseurl';
 
 // 1. Feed / Post all selected Adalat entries
 export const postAdalatEntries = async (entries) => {
-  const response = await API.post(`${BaseURL}/api/adalat/feed`, { entries });
+  const response = await API.post(`${BaseURL}/api/adalat/feed`, { entries });  // this is the api responsible for feeding adalat/vc/session
   return response.data;
 };
 
@@ -26,3 +26,15 @@ export const deleteAdalatEntry = async (id) => {
   const response = await API.delete(`${BaseURL}/api/adalat/${id}`);
   return response.data;
 };
+
+//5. get the list of all the courts from db
+export const allCourtsList = async () => {
+  const response = await API.get(`${BaseURL}/api/adalat/getAllCourts`);
+  return response.data;
+}
+
+//6. feed new court to the list of courts 
+export const feedNewCourt = async () => {
+  const response = await API.post(`${BaseURL}/api/adalat/feedNewCourt`);
+  return response.data;
+}
