@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { PublicRoute, ProtectedRoute } from './Components/routes/ProtectedRoute';
 import LoginPage2 from './Components/LoginPage2';
 import AdminDashboard from './Components/admin/AdminDashboard';
@@ -7,6 +7,23 @@ import './App.css';
 import AddUserPage from './Components/admin/AddUserPage';
 import { BaseURL } from './BaseURL/Baseurl';
 import UniversalUpdateComponent from './Components/UniversalUpdate/UniversalUpdateComponent';
+import PrisonerHistory from './Components/PrisonersHistory/PrisonerHistory';
+
+// Dedicated route guard for pages accessible by BOTH admin and staff
+const SharedRoute = () => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== 'admin' && user?.role !== 'staff') {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+};
 
 function App() {
   const navigate = useNavigate();
@@ -28,14 +45,12 @@ function App() {
     navigate('/login', { replace: true });
   };
 
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-
   return (
     <Routes>
       {/* 1. Public Routes (Redirects to dashboard if already logged in) */}
       <Route element={<PublicRoute />}>
         <Route 
-          path="/login"                                                      //   /login
+          path="/login" 
           element={<LoginPage2 onLoginSuccess={handleLoginSuccess} />} 
         />
         {/* Default route redirecting to login */}
@@ -45,31 +60,28 @@ function App() {
       {/* 2. Admin Protected Routes */}
       <Route element={<ProtectedRoute allowedRole="admin" />}>
         <Route 
-          path="/admin"                                                      //   /admin
+          path="/admin" 
           element={<AdminDashboard onLogout={handleLogout} />} 
-        />
-      </Route>
-
-      <Route element={<ProtectedRoute allowedRole="admin" />}>
-        <Route 
-          path="/admin/addUser"                                              //   /admin/addUser
-          element={<AddUserPage />} 
-        />
-      </Route>
-
-      {/* Brand New Route for Universal Adalat Log Management */}
-      <Route element={<ProtectedRoute allowedRole="staff" />}>
-        <Route 
-          path="/universal-update"                                     //   /admin/universal-update
-          element={<UniversalUpdateComponent />} 
         />
       </Route>
 
       {/* 3. Standard User / Staff Protected Route */}
       <Route element={<ProtectedRoute allowedRole="staff" />}>
         <Route 
-          path="/dashboard"                                                  //   /dashboard
+          path="/dashboard" 
           element={<Dashboard onLogout={handleLogout} />}
+        />
+      </Route>
+
+      {/* 4. Shared Routes (Accessible by BOTH Admin and Staff) */}
+      <Route element={<SharedRoute />}>
+        <Route 
+          path="/universal-update" 
+          element={<UniversalUpdateComponent />} 
+        />
+        <Route 
+          path="/prisonerHistory/:utNumber" 
+          element={<PrisonerHistory />} 
         />
       </Route>
 

@@ -419,8 +419,8 @@ const SearchSection = ({ handleSearch }) => {
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl space-y-3 p-4">
           <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
             <span>Pending FIR / Case Records ({uniqueCases.length})</span>
-      <div><SelectCourt/></div>
-            <span className="text-emerald-400">Click anywhere on a row to select/unselect for feeding</span>
+      <div className=' w-full justify-end flex mr-38'><div>Beta X </div><SelectCourt/></div>
+            <span className="text-emerald-400 text-sm">Fill the Court for multiple entries</span>
           </div>
 
           <div className="max-h-[380px] overflow-y-auto overflow-x-auto rounded-lg border border-slate-800">

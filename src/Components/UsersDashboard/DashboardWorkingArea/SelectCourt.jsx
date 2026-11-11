@@ -67,7 +67,6 @@ const SelectCourt = ({ value, onChange, placeholder = "Filter Courts..." }) => {
     setSearchTerm(val);
     setIsOpen(true);
     
-    // If you want it to act like a regular input change immediately:
     if (onChange) {
       onChange({ target: { value: val } });
     }
@@ -82,7 +81,7 @@ const SelectCourt = ({ value, onChange, placeholder = "Filter Courts..." }) => {
   };
 
   return (
-    <div className="relative inline-block text-left" ref={dropdownRef}>
+    <div className="relative inline-block text-left  min-w-[250px]" ref={dropdownRef}>
       <input
         type="text"
         value={searchTerm}
@@ -90,23 +89,23 @@ const SelectCourt = ({ value, onChange, placeholder = "Filter Courts..." }) => {
         onFocus={() => setIsOpen(true)}
         disabled={loading}
         placeholder={loading ? "Loading courts..." : placeholder}
-        className="bg-slate-950 border border-slate-800 focus:border-indigo-500 text-indigo-300 px-2.5 py-1 rounded text-[11px] font-bold transition focus:outline-none shadow-sm disabled:opacity-50 w-[200px]"
+        className="bg-slate-950 border border-slate-700 focus:border-indigo-500 text-indigo-300 px-3 py-2 rounded-md text-sm font-semibold transition focus:outline-none shadow-sm disabled:opacity-50 w-full min-w-[260px]"
       />
 
       {isOpen && (
-        <div className="absolute left-0 mt-1 w-full bg-slate-950 border border-slate-800 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+        <div className="absolute left-0 mt-1 w-full min-w-[260px] bg-slate-950 border border-slate-700 rounded-md shadow-xl z-50 max-h-60 overflow-y-auto">
           {filteredCourts.length > 0 ? (
             filteredCourts.map((court) => (
               <div
                 key={court._id || court.designation}
                 onClick={() => handleSelectOption(court.designation)}
-                className="px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-indigo-600 hover:text-white cursor-pointer transition border-b border-slate-900 last:border-none"
+                className="px-3 py-2.5 text-xs text-slate-200 hover:bg-indigo-600 hover:text-white cursor-pointer transition border-b border-slate-900 last:border-none font-medium leading-relaxed"
               >
                 {court.designation}
               </div>
             ))
           ) : (
-            <div className="px-2.5 py-2 text-[11px] text-slate-500 italic">
+            <div className="px-3 py-3 text-xs text-slate-400 italic">
               No matching courts found
             </div>
           )}

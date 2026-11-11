@@ -24,7 +24,7 @@ export const logoutUser = () => {
   localStorage.removeItem('user');
 };
 
-// 3. Adalat Feeding: Search prisoner records by parameters
+// 3. Adalat Feeding: Search prisoner records list of FIR and Adalat by parameters
 export const getUsers = async (searchParams) => {
   const queryParams = new URLSearchParams(searchParams).toString();
   const response = await API.get(`${BaseURL}/api/prisoners/users?${queryParams}`);
@@ -47,4 +47,18 @@ export const getAllUsersForAdmin = async () => {
 export const updateUserAdminApi = async (updateData) => {
   const response = await API.put('api/users/updateUserAdmin', updateData);
   return response.data;
+};
+
+
+// Add this inside your authService.js (or equivalent API file)
+// 4. Admin: Delete User API
+export const deleteUserAdminApi = async (userId) => {
+  try {
+    // Adjust the route path below ('api/users/...` or `api/users/deleteUserAdmin/...`) 
+    // to match your backend express route definition
+    const response = await API.delete(`api/auth/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };

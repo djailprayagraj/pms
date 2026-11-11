@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { toggleSelectCase } from '../../../redux/slices/adalatSlice';
-import { fetchAdalatByDate, allCourtsList, feedNewCourt } from '../../../api/adalatService';
+import { fetchAdalatByDate } from '../../../api/adalatService';
 import SelectCourt from './SelectCourt'; // Adjust path to where your SelectCourt component is located
 
 const sanitizeWarrantType = (val) => {
@@ -26,7 +26,12 @@ const PendingCaseItem = ({ caseItem, isChecked, onCaseUpdate }) => {
   const isBlankRow = Boolean(caseItem.isCustomBlank);
 
   const [warrantType, setWarrantType] = useState(() => {
-    return sanitizeWarrantType(caseItem.warrantType || caseItem.warrant_type || '167/187');
+    return sanitizeWarrantType(
+      caseItem.warrantType || 
+      caseItem.warrant_type || 
+      caseItem.ImprisonmentType || 
+      '167/187'
+    );
   });
 
   const [courtName, setCourtName] = useState(() => {

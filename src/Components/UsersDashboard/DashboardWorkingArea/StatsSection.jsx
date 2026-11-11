@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
 const StatsSection = ({ prisoner, groupData = [] }) => {
-  const [showCasesModal, setShowCasesModal] = useState(false);
-  
   // Date Range State for filtering productions/hearings
   const [dateRange, setDateRange] = useState({
     startDate: '',
@@ -20,29 +18,18 @@ const StatsSection = ({ prisoner, groupData = [] }) => {
       return {
         totalProductions: 0,
         vcCount: 0,
-        inPersonCount: 0,
-        activeCases: 0,
-        totalCases: 0,
-        mulaqatVisits: 0,
-        medicalVisits: 0,
-        uniqueFirList: []
+        inPersonCount: 0
       };
     }
 
     let totalProductions = 0;
     let vcCount = 0;
     let inPersonCount = 0;
-    let mulaqatVisits = 0;
-    let medicalVisits = 0;
-    
-    // Using a Set to collect unique FIR numbers across cases
-    const uniqueFirs = new Set();
-    let activeCasesCount = 0;
 
     rawDataset.forEach((item) => {
       if (!item) return;
 
-      // 1. Productions / Court Hearings Filtered by Date Range
+      // Productions / Court Hearings Filtered by Date Range
       const productions = item.productions || item.Productions || item.courtHearings || [];
       const filteredProductions = productions.filter((p) => {
         const pDate = p.date || p.hearingDate || p.timestamp;
@@ -53,6 +40,7 @@ const StatsSection = ({ prisoner, groupData = [] }) => {
       });
 
       totalProductions += filteredProductions.length;
+      
       vcCount += filteredProductions.filter(
         (p) =>
           p.mode?.toLowerCase() === 'vc' ||
@@ -68,36 +56,12 @@ const StatsSection = ({ prisoner, groupData = [] }) => {
           p.productionMode === 'Physical' ||
           p.isVc === false
       ).length;
-
-      // 2. Cases Processing (Handling cases array from your logs)
-      const cases = item.cases || item.Cases || [];
-      cases.forEach((c) => {
-        if (c.firNo) uniqueFirs.add(c.firNo);
-        if (
-          c.status?.toLowerCase() === 'active' ||
-          c.caseStatus?.toLowerCase() === 'active' ||
-          c.is_active === true ||
-          c.Status === 'Under Trial' ||
-          !c.status 
-        ) {
-          activeCasesCount++;
-        }
-      });
-
-      // 3. Mulaqat & Medical
-      mulaqatVisits += (item.mulaqatVisits || item.mulaqats || item.visitors || []).length;
-      medicalVisits += (item.medicalVisits || item.medicalLogs || item.opdVisits || []).length;
     });
 
     return {
       totalProductions,
       vcCount,
-      inPersonCount,
-      activeCases: uniqueFirs.size > 0 ? uniqueFirs.size : activeCasesCount,
-      totalCases: uniqueFirs.size > 0 ? uniqueFirs.size : (prisoner?.cases?.length || 0),
-      mulaqatVisits,
-      medicalVisits,
-      uniqueFirList: Array.from(uniqueFirs)
+      inPersonCount
     };
   }, [prisoner, groupData, dateRange, viewMode]);
 
@@ -165,8 +129,8 @@ const StatsSection = ({ prisoner, groupData = [] }) => {
           )}
         </div>
 
-        {/* Metric Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto flex-1 max-w-3xl justify-center mx-auto">
+        {/* Metric Cards Grid (Productions & VC/Physical) */}
+        <div className="grid grid-cols-2 gap-3 w-full lg:w-auto flex-1 max-w-xl justify-center mx-auto">
 
           {/* Stat 1: Productions */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col justify-between shadow-sm">
@@ -197,65 +161,9 @@ const StatsSection = ({ prisoner, groupData = [] }) => {
             </div>
           </div>
 
-          {/* Stat 3: Cases (Clickable) */}
-          <div
-            onClick={() => setShowCasesModal(true)}
-            className="bg-slate-900/80 border border-red-500/40 hover:border-red-500 rounded-xl p-3 flex flex-col justify-between shadow-sm cursor-pointer transition transform hover:-translate-y-0.5"
-          >
-            <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-400">
-              <span className="text-red-400 font-bold underline decoration-dotted">Cases (View)</span>
-              <span className="text-red-400">📑</span>
-            </div>
-            <div className="mt-1.5 flex items-baseline gap-2">
-              <span className="text-xl font-extrabold text-white">{stats.totalCases}</span>
-              <span className="text-[11px] text-slate-400">FIRs</span>
-            </div>
-          </div>
-
-          {/* Stat 4: Visitors / Medical */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col justify-between shadow-sm">
-            <div className="flex items-center justify-between text-[11px] font-mono uppercase text-slate-400">
-              <span>Visitors/Med</span>
-              <span className="text-purple-400">👥</span>
-            </div>
-            <div className="mt-1.5 flex justify-between items-center text-xs">
-              <div>
-                <span className="text-[9px] text-slate-400">Mulaqat: </span>
-                <span className="font-bold text-white text-xs">{stats.mulaqatVisits}</span>
-              </div>
-              <div>
-                <span className="text-[9px] text-slate-400">OPD: </span>
-                <span className="font-bold text-white text-xs">{stats.medicalVisits}</span>
-              </div>
-            </div>
-          </div>
-
         </div>
+
       </div>
-
-      {/* Optional Cases Modal Popup */}
-      {showCasesModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white font-mono uppercase">Cases / FIR Summary ({prisonerName})</h3>
-              <button onClick={() => setShowCasesModal(false)} className="text-slate-400 hover:text-white text-sm font-bold">✕</button>
-            </div>
-            <div className="p-4 overflow-y-auto space-y-2 flex-1 text-xs font-mono">
-              {prisoner?.cases?.map((c, idx) => (
-                <div key={idx} className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3 flex flex-col gap-1">
-                  <div className="flex justify-between text-blue-400 font-bold">
-                    <span>{c.firNo}</span>
-                    <span className="text-slate-400">{c.psName}</span>
-                  </div>
-                  <div className="text-slate-300">Act/Section: <span className="text-white font-semibold">{c.actSection}</span></div>
-                  <div className="text-slate-400 text-[10px]">Court: {c.courtName}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -32,16 +32,15 @@ const AllPrisonersList = () => {
 
       if (isNewSearch) {
         setPrisoners(newPrisoners);
+        // 📊 Capture backend stats ONLY on new search/initial load to keep them static while scrolling
+        setStats({
+          totalCount: data.totalCount || 0,
+          inCustodyCount: data.inCustodyCount || 0,
+          releasedCount: data.releasedCount || 0,
+        });
       } else {
         setPrisoners((prev) => [...prev, ...newPrisoners]);
       }
-      
-      // 📊 Capture backend stats
-      setStats({
-        totalCount: data.totalCount || 0,
-        inCustodyCount: data.inCustodyCount || 0,
-        releasedCount: data.releasedCount || 0,
-      });
       
       if (pageNum >= data.totalPages || newPrisoners.length === 0) {
         setHasMore(false);
@@ -114,7 +113,7 @@ const AllPrisonersList = () => {
           </div>
         </div>
 
-        {/* Server-Side Stat Cards */}
+        {/* Server-Side Stat Cards (Static during scroll) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
             <div>
@@ -274,4 +273,4 @@ const AllPrisonersList = () => {
   );
 };
 
-export default AllPrisonersList;
+ export default AllPrisonersList;

@@ -13,12 +13,13 @@ export default function AdminDashboard({ onLogout }) {
   const activeTab = useSelector((state) => state.adminDashboard.activeTab);
   const dashboardViewMode = useSelector((state) => state.adminDashboard.dashboardViewMode);
 
-  const navGroups = [
+ const navGroups = [
     {
       title: "Management",
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-        { id: 'users', label: 'Users', icon: '👥' },
+        { id: 'users', label: 'Add User', icon: '👥' },
+        { id: 'update-user', label: 'Employed Users', icon: '💼' }, // Added this item
       ],
     },
     {
@@ -36,7 +37,6 @@ export default function AdminDashboard({ onLogout }) {
       ],
     },
   ];
-
   // Flatten navItems helper for checking labels in placeholders
   const allNavItems = navGroups.flatMap((group) => group.items);
 
