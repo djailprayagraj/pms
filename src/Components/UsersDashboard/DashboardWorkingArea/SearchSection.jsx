@@ -25,12 +25,13 @@ const SearchSection = ({ handleSearch }) => {
   const loading = useSelector((state) => state.adalat?.loading);
   const errorMsg = useSelector((state) => state.adalat?.errorMsg);
   const submitSuccess = useSelector((state) => state.adalat?.submitSuccess);
-  const prisonerResult = useSelector((state) => state.adalat?.prisonerResult);     // all the data regarding a prisoner is coming from here 
+  const prisonerResult = useSelector((state) => state.adalat?.prisonerResult);
   const selectedCaseIds = useSelector((state) => state.adalat?.selectedCaseIds || []);
   const mainAction = useSelector((state) => state.adalat?.mainAction);
   const subOption = useSelector((state) => state.adalat?.subOption);
   const selectedDate = useSelector((state) => state.adalat?.selectedDate);
   const historyRecords = useSelector((state) => state.adalat?.historyRecords || []);
+  const globalSelectedCourt = useSelector((state) => state.adalat?.courtName);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, type: 'success', title: '', message: '', key: 0 });
@@ -67,7 +68,6 @@ const SearchSection = ({ handleSearch }) => {
     }
   }, [modifiedCases, prisonerWarrantCount]);
 
-  // all the unique cases of a prisoner is coming from here and being passed as props to PendingCasesItem component 
   const uniqueCases = React.useMemo(() => {
     const sourceList = prisonerResult?.rawData || prisonerResult?.cases || [];
     
@@ -128,13 +128,13 @@ const SearchSection = ({ handleSearch }) => {
         psName: userEdits.psName !== undefined ? userEdits.psName : '',
         district: 'Prayagraj',
         warrantType: userEdits.warrantType !== undefined ? userEdits.warrantType : '167/187',
-        courtName: userEdits.courtName !== undefined ? userEdits.courtName : '',
+        courtName: userEdits.courtName !== undefined ? userEdits.courtName : (globalSelectedCourt || ''),
         isCustomBlank: true,
       });
     }
 
     return processedCases;
-  }, [prisonerResult, modifiedCases]);
+  }, [prisonerResult, modifiedCases, globalSelectedCourt]);
 
   const handleCaseUpdate = (caseId, updatedFields) => {
     setModifiedCases((prev) => ({
@@ -158,6 +158,7 @@ const SearchSection = ({ handleSearch }) => {
     const defaultUtNo = prisonerResult?.utNumber || prisonerResult?.ut_code || prisonerResult?.utNo || 'N/A';
 
     try {
+      // STRICTLY filter only the rows whose IDs are present in selectedCaseIds
       const candidateEntries = uniqueCases
         .filter((c) => selectedCaseIds.includes(c.id || `${c.utNumber}-${c.firNo}`))
         .map((c) => {
@@ -170,7 +171,7 @@ const SearchSection = ({ handleSearch }) => {
           const finalFir = userEdits.firNo !== undefined ? userEdits.firNo : c.firNo;
           const finalActSection = userEdits.actSection !== undefined ? userEdits.actSection : c.actSection;
           const finalPsName = userEdits.psName !== undefined ? userEdits.psName : c.psName;
-          const finalCourtName = userEdits.courtName !== undefined ? userEdits.courtName : (c.courtName || 'N/A');
+          const finalCourtName = userEdits.courtName !== undefined ? userEdits.courtName : (c.courtName || globalSelectedCourt || 'N/A');
           const finalWarrantType = userEdits.warrantType || c.warrantType || '167/187';
           const finalIsRiha = userEdits.isRiha !== undefined ? userEdits.isRiha : Boolean(c.isRiha);
           const finalWarrantCount = userEdits.warrantCount !== undefined ? userEdits.warrantCount : prisonerWarrantCount;
@@ -416,11 +417,15 @@ const SearchSection = ({ handleSearch }) => {
       </div>
 
       {prisonerResult && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl space-y-3 p-4">
-          <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-visible shadow-2xl space-y-3 p-4">
+          <div className="flex flex-wrap justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2 gap-2">
             <span>Pending FIR / Case Records ({uniqueCases.length})</span>
-      <div className=' w-full justify-end flex mr-38'><div>Beta X </div><SelectCourt/></div>
-            <span className="text-emerald-400 text-sm">Fill the Court for multiple entries</span>
+            <div className="flex items-center gap-3 relative z-30">
+              <span className="text-emerald-400 text-xs hidden sm:inline">Fill the Court for multiple entries</span>
+              <div className="relative">
+                <SelectCourt />
+              </div>
+            </div>
           </div>
 
           <div className="max-h-[380px] overflow-y-auto overflow-x-auto rounded-lg border border-slate-800">

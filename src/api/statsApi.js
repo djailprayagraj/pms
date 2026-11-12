@@ -27,3 +27,32 @@ export const fetchAdalatLogs = async ({
   const response = await API.get(`${BaseURL}/api/statsLog/logs?${params.toString()}`);
   return response.data;
 };
+
+
+
+
+
+
+
+
+
+
+// statsApi.js
+export const fetchIndividualPrisonerStats = async ({
+  utNumber = '',
+  firNumber = '',
+  prisonerName = '',
+  startDate = '',
+  endDate = '',
+} = {}) => {
+  const params = new URLSearchParams({
+    ...(utNumber.trim() && { utNumber: utNumber.trim() }),
+    ...(firNumber.trim() && { firNumber: firNumber.trim() }),
+    ...(prisonerName.trim() && { prisonerName: prisonerName.trim() }),
+    ...(startDate && { startDate }),
+    ...(endDate && { endDate }),
+  });
+
+  const response = await API.get(`/api/statsLog/individual?${params.toString()}`);
+  return response.data;
+};
