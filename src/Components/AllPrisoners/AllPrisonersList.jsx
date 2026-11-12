@@ -10,7 +10,6 @@ const AllPrisonersList = () => {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState(null);
   
-  // 🌐 Server-side statistics state
   const [stats, setStats] = useState({
     totalCount: 0,
     inCustodyCount: 0,
@@ -19,20 +18,20 @@ const AllPrisonersList = () => {
 
   const [selectedPrisoner, setSelectedPrisoner] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const parentRef = useRef(null);
 
-  const fetchPrisonersData = async (pageNum, query = '', isNewSearch = false) => {
+  const fetchPrisonersData = async (pageNum, query = '', status = 'all', isNewSearch = false) => {
     if (loading) return;
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchAllPrisoners(pageNum, 50, query);
+      const data = await fetchAllPrisoners(pageNum, 50, query, status);
       const newPrisoners = data.prisoners || [];
 
       if (isNewSearch) {
         setPrisoners(newPrisoners);
-        // 📊 Capture backend stats ONLY on new search/initial load to keep them static while scrolling
         setStats({
           totalCount: data.totalCount || 0,
           inCustodyCount: data.inCustodyCount || 0,
@@ -56,13 +55,14 @@ const AllPrisonersList = () => {
   };
 
   useEffect(() => {
-    fetchPrisonersData(1, '', true);
-  }, []);
+    setPage(1);
+    fetchPrisonersData(1, searchQuery, statusFilter, true);
+  }, [statusFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
-      fetchPrisonersData(1, searchQuery, true);
+      fetchPrisonersData(1, searchQuery, statusFilter, true);
     }, 400);
 
     return () => clearTimeout(timer);
@@ -80,7 +80,7 @@ const AllPrisonersList = () => {
     if (scrollHeight - scrollTop <= clientHeight + 100 && !loading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchPrisonersData(nextPage, searchQuery, false);
+      fetchPrisonersData(nextPage, searchQuery, statusFilter, false);
     }
   };
 
@@ -93,8 +93,6 @@ const AllPrisonersList = () => {
 
   return (
     <div className="space-y-6">
-      
-      {/* ================= HEADER & STATS CARDS ================= */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -113,37 +111,52 @@ const AllPrisonersList = () => {
           </div>
         </div>
 
-        {/* Server-Side Stat Cards (Static during scroll) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-mono uppercase text-slate-400">Total Database Records</p>
-              <h3 className="text-lg font-bold text-slate-100 font-mono mt-0.5">{stats.totalCount}</h3>
-            </div>
-            <span className="p-2 bg-slate-800 rounded-lg text-slate-400 text-base">📋</span>
-          </div>
-
-          <div className="bg-red-950/20 border border-red-900/40 p-3 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-mono uppercase text-red-400">Currently In Custody (IN)</p>
-              <h3 className="text-lg font-bold text-red-400 font-mono mt-0.5">{stats.inCustodyCount}</h3>
-            </div>
-            <span className="p-2 bg-red-950/50 border border-red-900/60 rounded-lg text-red-400 text-base">🔒</span>
-          </div>
-
-          <div className="bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-mono uppercase text-emerald-400">Released / Out of Jail (OUT)</p>
-              <h3 className="text-lg font-bold text-emerald-400 font-mono mt-0.5">{stats.releasedCount}</h3>
-            </div>
-            <span className="p-2 bg-emerald-950/50 border border-emerald-900/60 rounded-lg text-emerald-400 text-base">🔓</span>
-          </div>
+        {/* Filter Tabs / Buttons */}
+        <div className="flex flex-wrap items-center gap-2 pt-2">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+              statusFilter === 'all' 
+                ? 'bg-slate-100 text-slate-950 shadow' 
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            All Records
+          </button>
+          <button
+            onClick={() => setStatusFilter('incustody')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+              statusFilter === 'incustody' 
+                ? 'bg-red-600 text-white shadow' 
+                : 'bg-slate-900 border border-slate-800 text-red-400 hover:bg-red-950/30'
+            }`}
+          >
+            🔒 In Custody ({stats.inCustodyCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter('released')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+              statusFilter === 'released' 
+                ? 'bg-emerald-600 text-white shadow' 
+                : 'bg-slate-900 border border-slate-800 text-emerald-400 hover:bg-emerald-950/30'
+            }`}
+          >
+            🔓 Released ({stats.releasedCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter('transferred')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+              statusFilter === 'transferred' 
+                ? 'bg-amber-600 text-white shadow' 
+                : 'bg-slate-900 border border-slate-800 text-amber-400 hover:bg-amber-950/30'
+            }`}
+          >
+            🔄 Transferred
+          </button>
         </div>
       </div>
 
-      {/* ================= DIRECTORY TABLE ================= */}
       <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
-        
         <table className="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-300">
           <thead className="bg-slate-900/90 text-xs font-mono uppercase text-slate-400 tracking-wider">
             <tr>
@@ -176,7 +189,7 @@ const AllPrisonersList = () => {
             </div>
           ) : prisoners.length === 0 ? (
             <div className="py-16 text-center text-slate-500 text-sm font-mono">
-              No matching prisoner records found.
+              No matching prisoner records found for this filter.
             </div>
           ) : (
             <div
@@ -190,7 +203,7 @@ const AllPrisonersList = () => {
                 const prisoner = prisoners[virtualRow.index];
                 if (!prisoner) return null;
 
-                const isReleased = prisoner['Release Date'] && prisoner['Release Date'].trim() !== "" && prisoner['Release Date'] !== " ";
+                const isInCustody = prisoner.location === 'IN';
 
                 return (
                   <div
@@ -230,12 +243,12 @@ const AllPrisonersList = () => {
                     <div className="w-1/6 pr-2 flex items-center gap-2">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
-                          !isReleased 
+                          isInCustody 
                             ? "bg-red-500/10 text-red-400 border border-red-500/20" 
                             : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                         }`}
                       >
-                        {!isReleased ? '🔒 IN CUSTODY' : '🔓 RELEASED'}
+                        {isInCustody ? '🔒 IN CUSTODY' : '🔓 RELEASED'}
                       </span>
                     </div>
 
@@ -268,9 +281,8 @@ const AllPrisonersList = () => {
         onClose={() => setSelectedPrisoner(null)}
         onUpdatePrisoner={handleUpdateRecord}
       />
-
     </div>
   );
 };
 
- export default AllPrisonersList;
+export default AllPrisonersList;

@@ -2,9 +2,9 @@ import API from './axios';
 import { BaseURL } from '../BaseURL/Baseurl';
 
 // Fetch all general prisoners with pagination and search
-export const fetchAllPrisoners = async (page = 1, limit = 50, search = '') => {
+export const fetchAllPrisoners = async (page = 1, limit = 50, search = '', status = 'all') => {
   const response = await API.get(
-    `${BaseURL}/api/prisoners/all?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`
+    `${BaseURL}/api/prisoners/all?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`
   );
   return response.data;
 };
