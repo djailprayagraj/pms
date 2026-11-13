@@ -78,7 +78,15 @@ const HistorySection = ({ isOpen: externalIsOpen, onClose: externalOnClose }) =>
 
   const handlePrintClick = async () => {
     setIsTranslating(true);
-    await openPrintPreview(groupedPrisonerRecords, filterMode, selectedDate);
+    
+    // Sort barracks in ascending alphanumeric order (e.g., 1a, 1b, 2a, 2b, 3a, 3b...)
+    const sortedRecords = [...groupedPrisonerRecords].sort((a, b) => {
+      const barrackA = a.barrack || a[0]?.barrack || '';
+      const barrackB = b.barrack || b[0]?.barrack || '';
+      return barrackA.localeCompare(barrackB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    await openPrintPreview(sortedRecords, filterMode, selectedDate);
     setIsTranslating(false);
   };
 

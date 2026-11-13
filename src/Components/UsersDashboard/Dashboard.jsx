@@ -6,11 +6,21 @@ import DashboardWorkingArea from './DashboardWorkingArea/DashboadWorkingArea';
 import ImportEprisonData from '../ImportData/ImportEprisonData';
 import WarrantWiseListAdalat from '../../Components/WarrantTypeList/WarrantWiseListAdalat';
 import AllPrisonersList from '../AllPrisoners/AllPrisonersList';
-import AllConvictedPrisonersList from '../ConvictedPrisoners/AllConvictedPrisonersList'; // 👈 Imported Convicted component
+import AllConvictedPrisonersList from '../ConvictedPrisoners/AllConvictedPrisonersList';
+import NextHearingDate from '../NextHearingDateList/NextHearingDate';
 
 const Dashboard = ({ onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const implementedTabs = [
+    'dashboard',
+    'all-prisoners',
+    'convicted-prisoners',
+    'import-eprison',
+    'warrant-list',
+    'next-hearing-list',
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -36,28 +46,23 @@ const Dashboard = ({ onLogout }) => {
 
           {activeTab === 'all-prisoners' && <AllPrisonersList />}
 
-          {/* 🏛️ Render Convicted Prisoners Directory */}
           {activeTab === 'convicted-prisoners' && <AllConvictedPrisonersList />}
 
           {activeTab === 'import-eprison' && (
             <ImportEprisonData onUploadSuccess={() => setActiveTab('dashboard')} />
           )}
 
-          {activeTab === 'warrant-list' && (
-           <WarrantWiseListAdalat /> 
-          )}
+          {activeTab === 'warrant-list' && <WarrantWiseListAdalat />}
 
-          {activeTab !== 'dashboard' && 
-           activeTab !== 'all-prisoners' && 
-           activeTab !== 'convicted-prisoners' && 
-           activeTab !== 'import-eprison' && 
-           activeTab !== 'warrant-list' && (
+          {activeTab === 'next-hearing-list' && <NextHearingDate />}
+
+          {!implementedTabs.includes(activeTab) && (
             <div className="h-full min-h-[400px] border-2 border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center p-8 text-center bg-slate-900/30">
               <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-3 text-slate-400 text-xl">
                 ⛓️
               </div>
               <h3 className="text-base font-semibold text-slate-300 uppercase tracking-wider font-mono">
-                {activeTab.replace('-', ' ')} Section
+                {activeTab.replace(/-/g, ' ')} Section
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mt-1">
                 Module view ready for integration. Select another tab to view active modules.

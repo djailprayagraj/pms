@@ -58,6 +58,21 @@ const SearchSection = ({ handleSearch }) => {
     }
   }, [submitSuccess, dispatch]);
 
+  // Safely determine if the prisoner location is Outside (OT)
+  const prisonerLocation = prisonerResult?.location ? prisonerResult.location.toString().trim().toUpperCase() : 'IN';
+  const isOutside = prisonerLocation === 'OT';
+
+  // Show an immediate toast warning if the fetched prisoner is currently Outside (OT)
+  useEffect(() => {
+    if (isOutside) {
+      showToast(
+        'error',
+        'Prisoner Outside (OT)',
+        'Adalat entries cannot be fed because this prisoner is currently marked Outside (OT).'
+      );
+    }
+  }, [isOutside]);
+
   // Sync warrantCount from DB record into the top input field when loaded
   useEffect(() => {
     const firstModifiedWithCount = Object.values(modifiedCases).find(
@@ -148,6 +163,17 @@ const SearchSection = ({ handleSearch }) => {
 
   const handlePostEntries = async (e) => {
     e.preventDefault();
+
+    // Block feeding and display Toast if location is 'OT' (Outside)
+    if (isOutside) {
+      showToast(
+        'error',
+        'Action Blocked',
+        'Cannot feed Adalat entries: Prisoner location is marked as Outside (OT).'
+      );
+      return;
+    }
+
     if (selectedCaseIds.length === 0) {
       dispatch(setErrorMsg('Please select at least one FIR entry to feed.'));
       return;
@@ -397,13 +423,28 @@ const SearchSection = ({ handleSearch }) => {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
               <button
                 onClick={handlePostEntries}
-                disabled={selectedCaseIds.length === 0 || isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-800 text-white disabled:text-slate-500 font-bold px-4 py-2 rounded-lg text-xs transition shadow-lg cursor-pointer flex items-center gap-1.5 border border-emerald-500/30"
+                disabled={selectedCaseIds.length === 0 || isSubmitting || isOutside}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-800 text-white disabled:text-slate-500 font-bold px-4 py-2 rounded-lg text-xs transition shadow-lg cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5 border border-emerald-500/30 disabled:border-slate-700"
               >
-                <span>{isSubmitting ? 'Posting to DB...' : `Feed Selected (${selectedCaseIds.length}) Entries`}</span>
+                <span>
+                  {isOutside
+                    ? 'Feeding Disabled (Location: OT)'
+                    : isSubmitting
+                    ? 'Posting to DB...'
+                    : `Feed Selected (${selectedCaseIds.length}) Entries`}
+                </span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${
+                    isOutside
+                      ? 'bg-amber-950/80 text-amber-400 border-amber-700'
+                      : 'bg-emerald-950/80 text-emerald-400 border-emerald-800'
+                  }`}
+                >
+                  Location: {prisonerLocation}
+                </span>
                 <span className="text-xs font-mono font-bold bg-red-950/80 text-red-400 border border-red-800 px-2.5 py-1 rounded-md">
                   UT No: {currentUtNo}
                 </span>

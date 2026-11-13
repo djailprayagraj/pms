@@ -38,3 +38,16 @@ export const feedNewCourt = async () => {
   const response = await API.post(`${BaseURL}/api/adalat/feedNewCourt`);
   return response.data;
 }
+
+
+// 7. Get next hearing records with optional date range, utNumber, and prisonerName filters
+export const getNextHearingRecords = async (params) => {
+  const response = await API.get(`${BaseURL}/api/adalat/next-hearings`, { params });
+  return response.data;
+};
+
+// 8. Update next hearing date for a record
+export const updateNextHearingDate = async (payload) => {
+  const response = await API.put(`${BaseURL}/api/adalat/update-next-hearing`, payload);
+  return response.data;
+};
